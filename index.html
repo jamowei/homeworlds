@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homeworlds: Kurzreferenz</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Darstellung wechseln (hell/dunkel)"><span class="icon">🌓</span><span class="label">Helles Design</span></button>
+<div class="wrap">
+
+  <div class="banner">
+    <span class="lbl">Neu hier? Lerne das Spiel</span>
+    <a href="https://de.boardgamearena.com/tutorial?game=homeworlds&amp;tutorial=958">Interaktives Tutorial zum Lernen des Spiels (Board Game Arena)</a>
+  </div>
+
+  <header>
+    <h1>Homeworlds: Kurzreferenz</h1>
+    <div class="dots">
+      <span class="r"></span><span class="y"></span><span class="g"></span><span class="b"></span>
+    </div>
+  </header>
+
+  <!-- Aufbau -->
+  <section>
+    <h2>Aufbau</h2>
+    <ul class="items">
+      <li>Sammle drei Pyramiden in jeder von drei Größen und vier Farben (Rot, Gelb, Grün und Blau).<br>
+        Alle 36 Steine starten in einem gemeinsamen Vorrat (Bank) außerhalb des Spiels.</li>
+      <li>Im Spiel sind aufrecht stehende Steine Sterne, die Sternensysteme markieren. Liegende Steine sind Schiffe.<br>
+        Jedes Schiff wird in der Nähe des Sterns/der Sterne des Systems platziert, das es bewohnt. Deine Schiffe zeigen von dir weg.</li>
+    </ul>
+  </section>
+
+  <!-- Sieg -->
+  <section>
+    <h2>Sieg</h2>
+    <p>Du gewinnst, wenn dein Gegner am Ende des Zuges eines der beiden Spieler keine Schiffe in seiner Heimatwelt kontrolliert. Wenn beide Spieler im selben Zug die Kontrolle über ihre Heimatwelt verlieren, endet das Spiel unentschieden.</p>
+  </section>
+
+  <!-- Zugaktionen -->
+  <section>
+    <h2>Zugaktionen</h2>
+    <p>Die beiden Spieler wechseln sich mit ihren Zügen ab.</p>
+
+    <ul class="items">
+      <li>
+        <div class="action-title">Erster Zug</div>
+        In deinem ersten Zug nimmst du beliebige drei Steine aus dem Vorrat. Stelle (oder staple) zwei davon zusammen als die Sterne deines Heimatwelt-Systems. Lege den dritten daneben als dein erstes Schiff.
+      </li>
+      <li>
+        <div class="action-title">Alle anderen Züge</div>
+        In allen anderen Zügen tust du eines der Folgenden:
+        <ul style="list-style: none; margin-top: 0.5rem;">
+          <li style="margin-bottom: 0.6rem;">
+            <span class="action-title">Grundaktion:</span> Befähige eines deiner Schiffe mit der Technologie (Farbe) eines Sterns in diesem System oder der Technologie eines beliebigen deiner Schiffe in diesem System. Führe die Aktion dieser Technologie wie im nächsten Abschnitt beschrieben aus.
+          </li>
+          <li style="margin-bottom: 0.6rem;">
+            <span class="action-title">Opfer (Sacrifice):</span> Gib eines deiner Schiffe in den Vorrat zurück. Befähige dann nacheinander einige deiner anderen Schiffe (überall) mit der Technologie des geopferten Schiffes. Jedes Mal, wenn du ein Schiff befähigst, führe die Aktion dieser Technologie wie im nächsten Abschnitt beschrieben aus. Die maximale Anzahl an Befähigungen entspricht der Größe des geopferten Schiffes: klein&nbsp;=1, mittel&nbsp;=2, groß&nbsp;=3. Dasselbe Schiff kann mehrfach befähigt werden.
+          </li>
+          <li>
+            <span class="action-title">Passen:</span> Nimm keine Aktion vor.
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Technologien -->
+  <section>
+    <h2>Technologien</h2>
+    <div class="tech-grid">
+      <div class="tech-card">
+        <h3><span class="tech-color r"></span>Rot <span class="de">= Erbeuten (Capture)</span></h3>
+        <p>Übernimm die Kontrolle über ein feindliches Schiff im selben System, das nicht größer ist als dein befähigtes Schiff.</p>
+      </div>
+      <div class="tech-card">
+        <h3><span class="tech-color y"></span>Gelb <span class="de">= Bewegen (Move)</span></h3>
+        <p>Bewege das befähigte Schiff in ein System, das mit seinem aktuellen System verbunden ist. (Zwei Systeme sind verbunden, wenn sie keine Sterngrößen gemeinsam haben.) Alternativ kannst du dein befähigtes Schiff in ein neues System bewegen und dabei einen beliebigen passenden Stein aus dem Vorrat als Stern verwenden.</p>
+      </div>
+      <div class="tech-card">
+        <h3><span class="tech-color g"></span>Grün <span class="de">= Bauen (Build)</span></h3>
+        <p>Nimm das kleinste Vorratsstück in der Farbe des befähigten Schiffes und platziere es als dein Schiff im System des befähigten Schiffes.</p>
+      </div>
+      <div class="tech-card">
+        <h3><span class="tech-color b"></span>Blau <span class="de">= Handeln (Trade)</span></h3>
+        <p>Tausche das befähigte Schiff gegen ein beliebiges Vorratsstück derselben Größe.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Besondere Ereignisse -->
+  <section>
+    <h2>Besondere Ereignisse</h2>
+    <div class="callout">
+      <h3>Verloren (Forgetting)</h3>
+      <p>Wenn ein System, das keine Heimatwelt ist, keine Schiffe hat, wird sein Stern sofort in den Vorrat zurückgegeben.</p>
+    </div>
+    <div class="callout">
+      <h3>Katastrophe (Catastrophe)</h3>
+      <p>Wenn ein System vier oder mehr Steine (Sterne und Schiffe) derselben Farbe enthält, darfst du alle Steine dieser Farbe in diesem System in den Vorrat zurückgeben. Du darfst dies während deines Zuges jederzeit kostenlos zusätzlich zu deinen üblichen Zugaktionen tun.</p>
+    </div>
+    <div class="callout">
+      <h3>Supernova</h3>
+      <p>Wenn der letzte Stern eines Systems durch eine Katastrophe entfernt wird, werden alle verbleibenden Schiffe in diesem System sofort in den Vorrat zurückgegeben.</p>
+    </div>
+  </section>
+
+  <div class="bottom-nav">
+    <span class="lbl">Weiterführende Links</span>
+    <ul>
+    <li><a href="guide.html">Babamots' Strategie-Guide</a></li>
+    <li><a href="homeworlds_handout.pdf" target="_blank">Homeworlds Handout PDF</a></li>
+    </ul>
+  </div>
+
+  <footer>
+  </footer>
+
+</div>
+<script>
+  (function () {
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      var label = document.querySelector(".theme-toggle .label");
+      if (label) {
+        label.textContent = theme === "light" ? "Dunkles Design" : "Helles Design";
+      }
+    }
+    var saved = null;
+    try { saved = localStorage.getItem("hw-theme"); } catch (e) {}
+    var theme = saved === "light" || saved === "dark"
+      ? saved
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    applyTheme(theme);
+    window.toggleTheme = function () {
+      var current = document.documentElement.getAttribute("data-theme");
+      var next = current === "light" ? "dark" : "light";
+      applyTheme(next);
+      try { localStorage.setItem("hw-theme", next); } catch (e) {}
+    };
+  })();
+</script>
+</body>
+</html>

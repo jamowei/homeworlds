@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homeworlds: Strategie-Guide</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Darstellung wechseln (hell/dunkel)"><span class="icon">🌓</span><span class="label">Helles Design</span></button>
+<div class="wrap">
+
+  <header>
+    <h1>Homeworlds: Strategie-Guide</h1>
+    <p>Eine deutsche Übersetzung von Babamots' Strategie-Guide</p>
+    <div class="dots">
+      <span class="r"></span><span class="y"></span><span class="g"></span><span class="b"></span>
+    </div>
+  </header>
+
+  <div class="index-box">
+    <span class="lbl">Inhaltsverzeichnis</span>
+    <a href="#erste-schritte">1. Erste Schritte</a>
+    <span class="sub">Die wichtigsten Fragen · Was sollte ich tun? · Den Gegner im Auge behalten · Die Bank im Auge behalten · Zug-Checkliste</span>
+    <a href="#fruehes-spiel">2. Frühes Spiel</a>
+    <span class="sub">Heimatstern-Farben · Heimatstern-Größen · Dein dritter Zug · Bank-Management · Spiegelung · Investitionen</span>
+    <a href="#mittleres-spiel">3. Mittleres Spiel</a>
+    <span class="sub">Rote Flaggen · Kolonieverteidigung · Wenn deine Kolonie angegriffen wird</span>
+    <a href="#spaetes-spiel">4. Spätes Spiel (wie man gewinnt)</a>
+    <span class="sub">Doomsday-Maschinen · Grundlegender direkter Sturmangriff · Plane den vollständigen, schnellen Sieg</span>
+    <a href="#sonstiges">5. Sonstiges</a>
+    <span class="sub">Katastrophen immer auslösen · Etikette · Mehr als zwei Spieler</span>
+  </div>
+
+  <!-- Kapitel 1: Erste Schritte -->
+  <section id="erste-schritte">
+    <h2>Erste Schritte <span class="tag">Kapitel 1</span></h2>
+
+    <p>Willkommen in meinem Strategie-Guide! Die folgenden Ratschläge helfen dir weiter, wenn du gerade die Regeln gelernt hast und dich fragst, wie du deine Züge nutzen kannst, um Fortschritt zu machen.</p>
+
+    <p>Falls du die Regeln noch nicht gelernt hast, gibt es hier vier Möglichkeiten, sie zu lernen:</p>
+
+    <h3>Die wichtigsten Fragen</h3>
+    <p>Wenn du Homeworlds spielst (oder die meisten Strategiespiele), solltest du dir ständig folgende Fragen stellen:</p>
+    <ul class="inner">
+      <li>„Wenn ich diesen Zug nichts tun würde, was wäre der beste Zug meines Gegners?“</li>
+      <li>„Wenn ich diesen Zug ausführe, den ich in Erwägung ziehe, was wäre dann der beste Zug meines Gegners?“</li>
+    </ul>
+    <p>Wenn dein Gegner die Gelegenheit hat, etwas für ihn wirklich Gutes zu tun, ist das schlecht für dich. Suche nach Möglichkeiten, das zu verhindern.</p>
+
+    <h3>Was sollte ich tun?</h3>
+    <h4>Deine ersten beiden Züge</h4>
+    <p>In deinem ersten Zug wählst du drei Steine aus. Diese werden die zwei Sterne deiner Heimatwelt und dein erstes Schiff sein. Falls du nervös bist, hier eine gute Wahl zu treffen, das empfehle ich Anfängern:</p>
+    <ul class="inner">
+      <li>Für deinen ersten Stern wähle ein blaues Stück beliebiger Größe.</li>
+      <li>Für deinen zweiten Stern wähle ein gelbes Stück, das eine <u>andere</u> Größe hat als dein blauer Stern.
+        <ul class="inner">
+          <li>Wenn du als Zweiter am Zug bist, achte darauf, dass einer deiner Sterne dieselbe Größe hat wie einer der Sterne deines Gegners.</li>
+        </ul>
+      </li>
+      <li>Für dein Schiff wähle ein großes grünes Stück.</li>
+    </ul>
+    <p>In deinem zweiten Zug baust du ein kleines grünes Schiff.</p>
+    <p>Herzlichen Glückwunsch! Deine ersten beiden Züge waren ungefähr so gut, wie sie jeder Experte machen würde!</p>
+
+    <h4>Grundlagen des frühen Spiels</h4>
+    <p>Für Anfänger wirkt die Zerstörung der gegnerischen Heimatwelt wie ein fernes Ziel. Es kann schwer sein zu wissen, wie ein „guter“ Zug im frühen Spiel aussieht. Hier sind einige kurzfristigere Ziele:</p>
+    <ul class="inner">
+      <li>Baue mehr und größere Schiffe als dein Gegner. Das ist das Hauptziel des frühen Spiels.</li>
+      <li>Immer wenn dein Gegner für ein Schiff einer neuen Farbe handelt, stelle sicher, dass du bald mindestens einmal für ein Schiff dieser Farbe handeln kannst. Sonst könntest du aus dieser Farbe <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#frozen_out">ausgesperrt</a> werden.
+        <ul class="inner">
+          <li>Und versuche natürlich, auf eine Weise zu bauen und zu handeln, die deinen Gegner bei einer Farbe zu kurz kommen lässt.</li>
+        </ul>
+      </li>
+      <li>Wenn du ein paar Schiffe in verschiedenen Farben hast, bringe Schiffe in neue Systeme, damit du weiterbauen kannst, ohne die Systeme zu <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#overpopulation">übervölkern</a>.</li>
+      <li>Wenn du und dein Gegner mehr Rot und Gelb bekommt, musst du anfangen, an mögliche Invasionen zu denken.
+        <ul class="inner">
+          <li>Sorge dafür, dass die größten möglichen Schiffe deine wertvollsten Systeme bewachen. Deine Heimatwelt ist die wertvollste, also sollte dort immer ein großes Schiff sein.</li>
+          <li>Sorge dafür, dass du rote Macht hast, damit du, falls dein Gegner beschließt, deine Systeme zu invadieren, seine Schiffe erbeuten kannst. Denke daran, dass rote Schiffe <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#sacrifice">geopfert</a> werden können, um in jedem System zu erbeuten, in dem du Schiffe hast; ich nenne das manchmal das <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#deterrent">Abschreckungsprinzip</a>. Ein einziges rotes Schiff kann also ausreichen, um all deine Systeme zu verteidigen (zumindest eine Weile).</li>
+          <li>Vermeide fast übervölkerte Systeme. Wenn du zwei oder drei wertvolle gleichfarbige Steine hast, könnte dein Gegner ein oder zwei Schiffe hinzufügen, um eine <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#catastrophe">Katastrophe</a> auszulösen.</li>
+        </ul>
+      </li>
+      <li>Wenn dein Gegner sich verwundbar lässt, greife an!
+        <ul class="inner">
+          <li>Wenn er kein Rot hat, du aber schon, kannst du sicher mit einem Schiff gleicher Größe invadieren. Alle seiner Schiffe, die nicht fliehen, können erbeutet werden.</li>
+          <li>Wenn seine Schiffe nicht so groß sind wie deine, invadiere seine Kolonie mit einem Schiff, das für ihn zu groß ist, um es zu erbeuten.</li>
+          <li>Wenn er drei gleichfarbige Steine in einem System hat, bewege ein weiteres Schiff dieser Farbe hinein, um ihn zu übervölkern.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>Behalte deinen Gegner im Auge</h3>
+    <p>Bei Homeworlds ist es leicht, mit den eigenen Plänen voranzupreschen und dabei zu ignorieren, was der Gegner tut, bis es zu spät ist. Du musst seine Pläne blockieren, sonst überrennt er dich schnell. Bevor du seine Pläne stören kannst, musst du wissen, was diese Pläne sind. Der letzte Zug deines Gegners ist oft ein Hinweis darauf, was er vorhat.</p>
+    <p>Bevor du anfängst, darüber nachzudenken, was du als Nächstes tun willst, ermittle, welches Ziel bzw. welche Ziele dein Gegner mit seinem letzten Zug erreichen wollte.</p>
+    <ul class="inner">
+      <li>War es ein „Sieg“? Hat er gerade bekommen, was er wollte?
+        <ul class="inner">
+          <li>Jetzt, wo er hat, was er wollte: hast du ein wenig Luft, um deinen eigenen Plan voranzutreiben?</li>
+          <li>Oder musst du dich dagegen verteidigen, dass er einen neuen Vorteil ausnutzt?</li>
+        </ul>
+      </li>
+      <li>Oder war es ein „Setup“? Ist es nur ein Schritt auf dem Weg zu etwas, das er will?
+        <ul class="inner">
+          <li>Wenn es ein Setup ist, kannst du es verderben?</li>
+          <li>Oder kannst du frühzeitig auf den Erfolg seines Plans reagieren?</li>
+          <li>Oder ist es sicher, an einem eigenen Plan zu arbeiten, während er auf sein Ziel hinarbeitet?</li>
+        </ul>
+      </li>
+      <li>Oder war es ein Rückzug? Hat er nur auf deine letzte Drohung reagiert?
+        <ul class="inner">
+          <li>Wenn ja, kannst du eine neue Drohung aufbauen, um ihn aus dem Gleichgewicht zu bringen?</li>
+        </ul>
+      </li>
+    </ul>
+    <p>Züge können mehrere Zwecke haben. Selbst wenn du einen Zweck des gegnerischen Zuges erkennst, suche nach weiteren.</p>
+
+    <h3>Behalte die Bank im Auge</h3>
+    <p>Oft sind die wichtigsten Steine diejenigen, die noch nicht im Spiel sind. Jeder Strategie-Guide wird dich davor warnen, das letzte mittlere oder kleine Stück zu bauen.</p>
+    <ul class="inner">
+      <li>Wenn du das letzte Kleine einer Farbe baust, wird dein Gegner wahrscheinlich ein Mittleres bauen können.</li>
+      <li>Wenn du das letzte Mittlere einer Farbe baust, wird dein Gegner wahrscheinlich ein Großes bauen können.</li>
+    </ul>
+    <p>Es ist meist schlecht, wenn dein Gegner ein größeres Schiff bauen kann als du, <u>wenn du diese größere Größe nicht auch sicher bauen könntest</u>. Manche neuen Spieler haben <u>zu viel</u> Angst davor, die „letzte Portion“ zu nehmen. Schaue ein oder zwei Züge voraus. Finde heraus, was passiert, wenn du und dein Gegner beide weiter versuchen, dieselbe Farbe zu bauen. Ermittle insbesondere:</p>
+    <ul class="inner">
+      <li>Wem würde zuerst der Platz durch Übervölkerung ausgehen?</li>
+      <li>Wer würde am Ende die größeren Schiffe haben?</li>
+    </ul>
+    <p>Wenn deinem Gegner zuerst der Platz ausgeht und du die größeren Schiffe bekommst, dann ist das Weiterbauen dieser Farbe wahrscheinlich eine gute Idee, selbst wenn du ihm kurzfristig ein größeres Schiff zugänglich machst. Habe keine Angst davor, diesen Weg zu gehen.</p>
+    <p>Es ist nicht nur das Bauen, das deinem Gegner neue Möglichkeiten eröffnen kann. Hier sind weitere Dinge, auf die du achten solltest, weil sie deinem Gegner zu größeren Schiffen verhelfen könnten als dir.</p>
+    <ul class="inner">
+      <li>Wenn dein Gegner ein mittleres oder großes Grün hat, könnte er es opfern, um eine Größe zu <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#leapfrog">überspringen</a>. In dem Fall reicht es nicht, sicherzustellen, dass du nicht das <u>letzte</u> Stück dieser Größe nimmst. Du musst darauf achten, nicht das vorletzte oder gar drittletzte Stück seiner Größe zu nehmen.</li>
+      <li>Wenn du einen (kleinen oder mittleren) Stern entdeckst, der das letzte Stück seiner Größe ist, eröffnest du deinem Gegner möglicherweise die nächstgrößere Größe zum Bauen.</li>
+      <li>Wenn du ein System aufgibst, geht der Stern-Marker in die Bank. Dein Gegner könnte den alten „Stern“ als Schiff bauen.</li>
+      <li>Wenn du ein Schiff gegen eine andere Farbe handelst, geht das alte Schiff in die Bank. Dein Gegner könnte das alte Schiff bauen.</li>
+      <li>Wenn du ein Schiff opferst, geht es in die Bank, und dein Gegner könnte es bauen. Das ist besonders im späten Spiel wichtig, wenn die Bank fast leer ist und du große Schiffe für Machtspiele opfern willst. Du könntest deinem Gegner genau das Material in die Hand geben, das er zur Verteidigung braucht.</li>
+      <li>Eine Katastrophe kann viele Steine in die Bank legen, besonders wenn sie einen Stern zerstört hat. Dein Gegner könnte als Erster die Gelegenheit bekommen, sie wieder aufzubauen. Nur wenige Dinge sind schlimmer, als deine Schiffe zu opfern, um das große Schiff deines Gegners zu übervölkern &ndash; nur um es dann zu erleben, dass er es in seinem nächsten Zug wieder baut!</li>
+    </ul>
+
+    <h3>Zug-Checkliste</h3>
+    <p>Unter Anfängern werden fast alle Homeworlds-Partien wegen eines schweren Schnitzers verloren. Wenn du wirklich vorsichtig sein willst, empfehle ich, diese ganze Checkliste zu lesen, bevor du deinen Zug festlegst. Jedes Mal. Der erste Moment, in dem du nicht alle diese Dinge überprüfst, könnte der sein, an dem du überrascht wirst.</p>
+    <ul class="inner">
+      <li>Identifiziere <u>jede</u> Katastrophe, die dein Gegner möglicherweise auslösen könnte.
+        <ul class="inner">
+          <li>Gelbe Opferung geben extreme Beweglichkeit, die oft Leute überrascht. Achte darauf, alle Wege zu betrachten, auf denen dein Gegner ein Gelb opfern und gleichfarbige Schiffe zu deinen Systemen bewegen könnte.</li>
+          <li>Wenn er eine Katastrophe auslösen könnte, bei der du mehr oder größere Schiffe verlierst als er, solltest du wahrscheinlich Schiffe aus dem Zietsystem bewegen.</li>
+        </ul>
+      </li>
+      <li>Was wäre, wenn dein Gegner jetzt sofort einen Angriff auf deine Heimatwelt versuchte?
+        <ul class="inner">
+          <li>Wenn er damit begänne, seine Schiffe so schnell wie möglich in deine Heimat zu bewegen, was würde passieren?</li>
+          <li>Könntest du die Schiffe so schnell angreifen, wie sie ankommen?</li>
+          <li>Könnte es eine Katastrophe geben, die du nicht rechtzeitig verhindern könntest?</li>
+          <li>Wenn sein Angriff gerade so scheitern würde: Was bräuchte er noch, damit er gelingt?</li>
+          <li>Wenn dein Gegner kurz davor ist, einen Siegplan zu haben, finde heraus, was du in diesem Zug zur Verteidigung tun kannst, etwa ein größeres rotes Schiff zu bekommen (um Eindringlinge schneller zu erbeuten) oder ein Schiff aus deiner Heimat zu bewegen (wenn es nahe dran ist, übervölkert zu sein).</li>
+        </ul>
+      </li>
+      <li>Was wäre, wenn <u>du</u> jetzt einen Angriff auf die Heimatwelt des Gegners versuchtest?
+        <ul class="inner">
+          <li>Was bräuchtest du noch, damit er gelingt?</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Kapitel 2: Frühes Spiel -->
+  <section id="fruehes-spiel">
+    <h2>Frühes Spiel <span class="tag">Kapitel 2</span></h2>
+
+    <h3>Die Farben deines Heimatsterns wählen</h3>
+    <p>Du solltest immer mit Grün beginnen (entweder als Heimatstern oder als Startship). Sonst kannst du nie ein Schiff bauen und nicht gewinnen. Sicher, du könntest mit Rot, Gelb und Blau beginnen und dann dein Schiff gegen ein Grünes eintauschen, aber du hättest genauso gut mit einem grünen Schiff beginnen können.</p>
+    <p>Du solltest fast sicher mit Blau beginnen. Blau zu Hause macht es leicht, Schiffe in einer Vielzahl von Farben zu bekommen, aber technisch gesehen könntest du nach ein paar Zügen einen blauen Stern entdecken und deine Farbvielfalt von dort beziehen.</p>
+    <p>Die meisten Spieler wählen ein großes Grün als erstes Schiff und hoffen, es irgendwann zu opfern, um den Gegner beim Bauen großer Schiffe zu schlagen. Das heißt, sie wollen einen Heimatstern blau; so ist die erste Farbfrage, der sie sich gegenüber sehen: Soll der andere Stern gelb sein (was Andy als „Schnellstart“ bezeichnet) oder rot („planetares Verteidigungssystem“)?</p>
+    <p>Es gibt eine lange Debatte zwischen Spielern darüber, ob es besser ist, einen roten oder einen gelben Heimatstern zu verwenden. Während ich dies 2024 schreibe, ist Gelb seit einigen Jahren deutlich beliebter unter Experten. In jüngerer Zeit begann der derzeitige Top-BGA-HW-Spieler „YaiHar“ zu zeigen, dass ein roter Heimatstern eine fatale Belastung sein kann. Wenn YaiHars Gegner einen roten Heimatstern nimmt, erlangt YaiHar oft einen überwältigenden Vorteil, indem er versucht, rote Schiffe zu monopolisieren. Eine vollständige Monopolie bekommt er nicht, aber es ist nahe genug daran, dass es meist zu einem schnellen Sieg führt. Mir ist kein zufriedenstellendes Gegenmittel bekannt, das der Spieler mit rotem Heimatstern gegen diese Strategie einsetzen kann.</p>
+    <p>Zusammengefasst:</p>
+    <ul class="inner">
+      <li>Beginne mit einem großen grünen Schiff.</li>
+      <li>Mache einen deiner Heimatsterne blau.</li>
+      <li>Mache deinen anderen Heimatstern gelb.
+        <br>Außer jemand findet eine viel bessere Antwort auf YaiHars Rot-Monopolisierungs-Strategie, solltest du jegliche Ratschläge ignorieren, die du gehört hast, dass Rot so gut sei wie Gelb.</li>
+    </ul>
+
+    <h3>Die Größen deines Heimatsterns wählen</h3>
+    <p>Die Größenoptionen der Heimatwelt sind <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#homesize">hier</a> benannt.</p>
+    <p>Die Banker-Aufstellung ist nach den Investitionen benannt, die du machen kannst, indem du einfach ein grünes Schiff aus deiner Heimat bewegst. In meinen Spielen werden Investitionssysteme meist invadiert, bevor sie eingelöst werden können, aber es scheint, dass Banker am häufigsten erfolgreich investieren.</p>
+    <p>Wenn du die Regeln zum ersten Mal liest, denkst du vielleicht, dass die Goldilocks-Aufstellung einige der Vorteile von Banker und Festung vereint. Das konnte ich nicht bestätigen. Abgesehen von einer seltenen Situation im späten Spiel habe ich nie jemanden gesehen, der bewusst in einen mittleren Stern investiert, daher würde ich sagen, dass Goldilocks keine besseren Investitionsmöglichkeiten bietet als die Festung. Selbst wenn der Vorrat an mittleren Stücken ausgehen könnte, erinnere ich mich an keine Partie, in der ein Goldilocks-System wegen eines geringen Mittel-Vorrats schwer zu erreichen war. Ich stelle mir vor, dass der Name „Goldilocks“ sich auf die einfache Tatsache bezieht, dass die verbundenen Sterne mittel sind: nicht groß und nicht klein (wie der Stuhl des Bärenkindes).</p>
+    <p>Für mich liegt der wichtige Aspekt von Goldilocks-Systemen gegen Ende des frühen Spiels, wenn mittlere Schiffe ins Spiel kommen. Du kannst die Wirtschaft deiner Wahl beschleunigen, indem du mittlere Sterne dieser Farbe entdeckst und so schneller Zugang zu großen Schiffen bekommst.</p>
+    <p>Die von Looney Labs veröffentlichten Strategie-Guides sagen, dass die Festung schwer zu invadieren ist. Ich habe einige lange Partien gespielt, in denen das Fehlen kleiner Sterne eine wichtige Rolle spielte, aber nach dem, was ich gesehen habe, spielt die Festung eine wichtigere Rolle im frühen Spiel. Festungen sind die einzigen Heimatwelten ohne das weiter unten beschriebene „Problem des kleinen Sterns“. Festungen machen es auch leicht, eine Wirtschaft deiner Wahl per Entdeckung kleiner Sterne dieser Farbe anzukurbeln.</p>
+    <p>Gemini-Heimatwelten können das Universum klein machen oder sogar die Heimatwelten verbinden. Deshalb sind Partien mit einer Gemini-Heimatwelt tendenziell etwas kürzer als Partien mit großem Universum. Der Spieler, der den ersten Zug macht, bekommt einen Vorsprung im Bauen, und kurze Partien geben dem zweiten Spieler weniger Zeit aufzuholen. Theoretisch sollten kurze Partien für den ersten Spieler besser sein (ich habe keine Daten, die das belegen, aber es klingt schlüssig). Da Gemini-Heimatwelten das Spiel verkürzen können, scheinen sie gut für den ersten und schlecht für den zweiten Spieler. Als ich Anfang 2021 schrieb, hatte der Spieler Draw5PlayAll auf der SDG sehr gute Erfolge damit, die Spitzenposition der SDG-Rangliste mit einem Gemini-System zu verteidigen (er hatte das Glück, viermal in Folge den ersten Zug zu haben!).</p>
+
+    <h4>Das Problem des kleinen Sterns</h4>
+    <p>Sobald du einen kleinen Stern in deiner Heimatwelt hast, bekommt die Wirtschaft dieser Sternfarbe einen kleinen Vorsprung: Du hast ein kleines Stück dieser Farbe entfernt, sodass mittlere Schiffe dieser Farbe eher gebaut werden können. Wegen der Gefahr der Übervölkerung ist es ein wenig schwieriger, an den Wirtschaften teilzunehmen, die deinen Heimatstern-Farben entsprechen. Kleine Sterne geben also einer Wirtschaft einen kleinen Schub, bei der du einen Nachteil hast (was möglicherweise zu einem Schiffsgrößen-Vorteil für deinen Gegner führt).</p>
+    <p>Insbesondere: Wenn du als Zweiter am Zug bist und dein Gegner einen kleinen Stern gewählt hat, solltest du wahrscheinlich keinen kleinen Stern derselben Farbe haben (außer du versuchst eine <a href="#instafreeze">Sofort-Ausgrenzung</a>). Sie können das letzte Kleine dieser Farbe als Schiff bekommen und dich ausgrenzen.</p>
+
+    <h3>Bank-Management</h3>
+    <h4>Verschwende keine Zeit</h4>
+    <p>Im frühen Spiel geht es darum, mehr und größere Schiffe zu bekommen als dein Gegner. Zweitrangig willst du Schiffe in einer Vielzahl von Farben bekommen. Insbesondere ist es wünschenswert, in jedem System, das du besetzt hältst, Zugang zu jeder Technologie zu haben. Wenn du ein Schiff bewegst oder handelst, das das einzige Stück seiner Farbe in deinem System war, hast du beim Bestreben, jede Farbe in jedes System zu bringen, Fortschritt verloren. Den Zugang zu dieser Farbe in diesem System wiederherzustellen, wird dich einen zukünftigen Zug kosten. Es ist meist besser, einen Zug damit zu verbringen, zuerst ein Schiff dieser Farbe zu bauen und es <u>dann</u> erst wegzubewegen oder zu handeln.</p>
+    <p>Selbst wenn ich über einen Stern Zugang zu einer Technologie habe, bevorzuge ich ein Schiff dieser Farbe dort (solange keine Gefahr besteht, dass mein Gegner es übervölkert). Wenn es mir gelänge, ein beinahe-Monopol auf diese Farbe zu bekommen, könnte dieses System der perfekte Ort sein, um ein zusätzliches Schiff dieser Farbe zu bauen, auch wenn zwei Schiffe und ein Stern derselben Farbe normalerweise sehr gefährlich sind.</p>
+    <p>Eine weitere Möglichkeit, Zeit zu verschwenden, ist zu häufiges Handeln. Idealerweise handelst du für jede Farbe einmal und baust dann alle Schiffe dieser Farbe, die du brauchst. <i>Später</i> im Spiel sind zusätzliche Handel wichtiges Werkzeug, um die Bank zu beeinflussen, große Schiffe wichtiger Farben zu bekommen, schnell Baugemöglichkeiten in einer plötzlich wertvollen Farbe zu eröffnen und sich gegen Katastrophen zu verteidigen.</p>
+
+    <h4>Ausgrenzungen (Freeze-outs)</h4>
+    <p>Aus einer Farbe ausgesperrt zu werden, kann schnell zu einer frustrierend hoffnungslosen Lage führen. Auf der anderen Seite kann ein Monopol einen schnellen Sieg sichern. Ausgrenzungen zu vermeiden ist eine sehr wichtige Fähigkeit.</p>
+    <p>Hier ist eine allgemeine Beschreibung einer typischen Ausgrenzung/eines Typischen Monopols. Ich nenne den Spieler, der das Monopol bekommt, M, den Spieler, der ausgesperrt wird, F, und die Farbe des Monopols x.</p>
+    <ol>
+      <li>Mindestens ein Spieler hat einen kleinen Stern der Farbe x in seiner Heimatwelt.
+        <ul class="inner">
+          <li>Ausgrenzungen können auch in Farben ohne kleine Sterne passieren, aber ein kleiner Stern macht eine Ausgrenzung wahrscheinlicher, weil er Fs Reaktionsfenster um mindestens einen Zug verkleinert.</li>
+        </ul>
+      </li>
+      <li>M konzentriert sich darauf, Farbe x zu bauen.</li>
+      <li>F konzentriert sich auf eine andere Farbe als x oder arbeitet daran, eine Vielzahl von Farben zu bekommen.</li>
+      <li>Alle Kleinen der Farbe x sind nun im Spiel.
+        <ul class="inner">
+          <li>M hat zwei oder drei kleine Schiffe der Farbe x und ein großes Schiff (möglicherweise der Farbe x).</li>
+          <li>F hat mehrere kleine Schiffe und ein großes Schiff.</li>
+          <li>Ein oder beide Spieler können ein Schiff in einer Kolonie haben (einem System außerhalb der eigenen Heimat).</li>
+          <li>Da keine kleinen Schiffe der Farbe x in der Bank sind, kann F x nur bekommen, indem er sein großes Schiff gegen x handelt. Es scheint selten, dass F ein mittleres Schiff einer anderen Farbe bekommt (um es gegen ein mittleres x zu handeln), bevor die mittleren x weg sind.</li>
+        </ul>
+      </li>
+      <li>Wenn M noch kein Gelb hat, handelt er jetzt ungefähr für Gelb. Ist x nicht Gelb, könnte M sogar sein Großes gegen Gelb handeln, um die Bank nicht wieder mit x aufzufüllen.
+        <ul class="inner">
+          <li>Genau jetzt ist eine kritische Zeit für F. Wenn er das Problem bemerkt, sollte F sein großes Schiff gegen Farbe x handeln. Besonders wichtig ist es, dies früh zu tun, wenn F einen Heimatstern der Farbe x hat.</li>
+        </ul>
+      </li>
+      <li>M baut ein mittleres Schiff der Farbe x.</li>
+      <li>F bemerkt das Problem nicht und baut weiter.</li>
+      <li>Wenn F ein rotes Schiff hat, muss M jetzt vielleicht für Rot handeln. M kann ein mittleres Schiff der Farbe x gegen ein r2 tauschen, ohne ein kleines x für F verfügbar zu machen.</li>
+      <li>M baut weiter mittlere x, möglicherweise mit einem grünen Opfer für einen <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#shopping_spree">Einkaufsbummel</a>, der die x aus der Bank schnell räumt.</li>
+      <li>F bemerkt das Problem entweder weiterhin nicht oder handelt sein großes Schiff gegen x (aber dafür ist es jetzt wohl zu spät).</li>
+      <li>M beginnt, große x zu bauen und/oder große Schiffe gegen andere Farben zu tauschen, besonders Gelb.</li>
+      <li>Wenn F weise genug war, sein großes Schiff gegen x zu tauschen, könnte er ungefähr jetzt ein weiteres Schiff der Farbe x bauen.
+        <ul class="inner">
+          <li>Wenn F keinen Heimatstern der Farbe x hat, könnte das für F sicher sein. Im besten Fall für F konnte er ein großes x-Schiff bauen (unter Ausnutzung von Ms Arbeit, die kleineren x-Stücke aus der Bank zu räumen), und die Position könnte ungefähr ausgeglichen sein.</li>
+          <li>Wenn F <u>doch</u> einen Heimatstern der Farbe x hat, bringt sich F durch den Bau eines weiteren x-Schiffes in seiner Heimat an den Rand einer Katastrophe. M könnte möglicherweise ein weiteres x-Schiff (vorzugsweise mit einem gelben Opfer) in Fs Heimat bewegen und seine x-Stücke übervölkern.</li>
+          <li>Manchmal bewegt ein verzweifeltes F sein großes x-Schiff aus seiner Heimat, um sicher ein weiteres x-Schiff in einer Kolonie zu bauen. Selbst wenn das funktioniert, kostet es mehrere Züge. Manchmal kann M die fehlenden großen Schiffe in Fs Heimat ausnutzen und selbst mit einem großen Schiff invadieren.</li>
+        </ul>
+      </li>
+      <li>Angenommen, F war zu langsam, um sein großes Schiff gegen Farbe x zu tauschen, dann kann M nun seine großen x-Schiffe gegen andere Farben tauschen und die großen x-Schiffe wiederholt neu bauen, sodass er jeden zweiten Zug ein großes Schiff baut. Ich nenne diese Technik <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#milking">„die Kuh melken“</a>.
+        <ul class="inner">
+          <li>Dieser Prozess erzeugt typischerweise einen überwältigenden Materialvorteil für M, und die Partie ist praktisch entschieden.</li>
+          <li>F kann versuchen, diesen Zyklus zu unterbrechen, indem er Sterne der Farbe x entdeckt.</li>
+        </ul>
+      </li>
+    </ol>
+    <div class="warn">Der Ausgrenzungsprozess kann erschreckend schnell ablaufen.</div>
+    <p>Das ist der Hauptgrund, warum ich Leute warne, dass Homeworlds ein sehr ungnädiges Spiel ist. Manchmal hat F nur ein einziges Zug-„Fenster“, um auf Ms Monopolversuch zu reagieren.</p>
+
+    <h4 id="instafreeze">Sofort-Ausgrenzung (Instafreeze)</h4>
+    <p>Das ist eine Falle, die du neuen Spielern stellen kannst, wenn du als Zweiter am Zug bist.</p>
+    <p>Wenn dein Gegner einen kleinen Stern wählt, der blau oder grün ist (oder vielleicht sogar gelb), dann wählst auch du einen kleinen Stern <u>und das erste Schiff</u> dieser Farbe. Du kannst das letzte kleine Stück dieser Farbe als Schiff bauen und sie aus dieser Farbe aussperren (siehe oben).</p>
+    <figure>
+      <img src="https://i.imgur.com/oBOddA5.png" alt="Alle kleinen blauen Steine im Spiel">
+      <figcaption>Alle kleinen blauen Stücke sind im Spiel. Spieler tauschen ihre kleinen Schiffe normalerweise, um neue Technologien zu bekommen, aber Alpha muss sein großes Schiff tauschen, um Blau zu bekommen.</figcaption>
+    </figure>
+    <p>Neue Spieler werden das Problem nicht bemerken, und du kannst mittlere und große Schiffe dieser Farbe bauen, bevor sie wissen, wie ihnen geschieht.</p>
+    <p>Erfahrene Spieler werden antworten, indem sie ihr (großes) Startship tauschen, um in die Wirtschaft einzusteigen, und die Position wird ungefähr ausgeglichen sein.</p>
+
+    <h3>Dein dritter Zug</h3>
+    <p>In deinem ersten Zug machst du deine Heimatwelt.</p>
+    <p>In deinem zweiten Zug baust du ein kleines Schiff (es gibt fast nie eine andere vernünftige Wahl).</p>
+    <p>In deinem dritten Zug solltest du erwägen, dein kleines Schiff gegen eine andere Farbe zu tauschen. Wenn es kleine Heimatsterne im Spiel gibt, dann werden die mittleren Schiffe dieser Farbe bald zum Bauen verfügbar sein. Neue Spieler bauen in ihrem dritten Zug oft einfach ein drittes Schiff in der Farbe ihres ursprünglichen Schiffs, selbst wenn ihr Gegner bereit ist, ein Monopol zu ergreifen (oft über die blauen Schiffe). Lass dich nicht abhängen! Identifiziere die Farbe(n), die am ehesten bald für den Bau von Mittleren offen sein wird, und steige früh in diese Wirtschaft ein.</p>
+
+    <h3>Spiegelung (Mirroring)</h3>
+    <p>„Spiegelung“ bedeutet, im frühen Spiel ungefähr dasselbe zu tun wie dein Gegner: die Farben zu bauen, die er baut, die Farben zu tauschen, die er tauscht, sich auszubreiten, wenn er sich ausbreitet. Es mag einfallslos wirken, oder als wäre das Spiel kaputt, aber Spiegelung ist oft die beste Wahl für den zweiten Spieler, denn sie stellt sicher, dass er in keiner Wirtschaft zu weit zurückfällt. In manchen Partien kann Spiegelung über ein Dutzend Züge lang die richtige Wahl sein, besonders wenn die Spieler für ihre Heimatsterne dieselben Farben gewählt haben.</p>
+    <p>Meist wird Spiegelung nach einer Weile unmöglich, weil die Verteilung der Stücke (besonders der Großen) zwischen den Spielern ungleich wird. Wenn du deinen Gegner spiegelst, versuche vorherzusehen, wann er einen Zug machen könnte, den du nicht spiegeln können wirst. Zum Beispiel solltest du wahrscheinlich kein Stück bauen, das deinem Gegner die Tür zu einem profitablen <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#shopping_spree">Einkaufsbummel</a> öffnet. So etwas setzt der Spiegelung meist schnell ein Ende.</p>
+
+    <h3>Investitionen</h3>
+    <p>Ich habe vor, diesen Abschnitt zu einer kleinen Sektion auszubauen. Siehe <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#investment">Investition</a> im Glossar.</p>
+  </section>
+
+  <!-- Kapitel 3: Mittleres Spiel -->
+  <section id="mittleres-spiel">
+    <h2>Mittleres Spiel <span class="tag">Kapitel 3</span></h2>
+
+    <h3>Rote Flaggen</h3>
+    <p>Als sehr schneller Überlebensguide für das mittlere Spiel sind hier <u>schlechte</u> Situationen, ungefähr in der Reihenfolge von der schlimmsten zur am wenigsten schlimmen. Ich nenne sie „rote Flaggen“, weil sie eine Gefahr anzeigen. Du solltest diese Situationen normalerweise vermeiden, es sei denn, du kannst deinem Gegner etwas noch Schlimmeres antun. Umgekehrt ist es gut, wenn dein Gegner eines dieser Probleme hat.</p>
+    <ol>
+      <li>Ich habe keine Schiffe in meiner Heimat und verliere die Partie.</li>
+      <li>Mein Gegner hat mehr (oder größere) Schiffe in meinem Heimat-System, als ich in einem Zug erbeuten kann, selbst indem ich mein größtes Rot opfere.</li>
+      <li>Einer meiner Heimat-System-Marker ist zerstört.</li>
+      <li>Ich habe kein großes Schiff in meinem Heimat-System.</li>
+      <li>Es gibt eine Beinahe-Katastrophe (drei Stücke), an der meine Schiffe beteiligt sind (oder der Marker eines Systems, in dem ich Schiffe habe).</li>
+      <li>Mein Gegner hat ein rotes Schiff (<a href="#deterrent">irgendwo</a>) und ich nicht.</li>
+      <li>Mein Gegner hat mehr große Schiffe als ich.</li>
+      <li>Mein Gegner hat mehr gelbe Schiffe als ich.</li>
+      <li>Mein Gegner hat ein Schiff im selben System wie ich, und es ist größer als meine Schiffe dort.</li>
+      <li>Die Schiffe in meinem Heimat-System sind alle dieselbe Farbe (der <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#bluebird">Bluebird</a>-Fehler).</li>
+      <li>Mein einziges großes Schiff in meinem Heimat-System ist dieselbe Farbe wie ein (oder mehrere!) Schiff(e) oder Marker in meiner Heimat (mein Gegner könnte eine <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#demolition_fleet">Abrissflotte</a> bekommen).</li>
+    </ol>
+
+    <h3>Kolonieverteidigung</h3>
+    <p>Während des mittleren Spiels wirst du weiter versuchen, mehr und größere Schiffe zu bekommen als dein Gegner, aber jetzt ist deine Flotte zu groß für deine Heimatwelt. Die anderen Systeme, in denen du Schiffe hältst, sind „Kolonien“. Deine Kolonien sicher zu halten und feindliche Kolonien anzugreifen ist eine wichtige Fähigkeit. Dabei gelten viele derselben Prinzipien wie für die Verteidigung und den Angriff auf Heimatwelten, außer dass Heimatwelten im Falle eines Angriffs nicht evakuiert werden sollten.</p>
+    <p>Dieser Abschnitt ist größtenteils für den Verteidiger geschrieben. Wenn du angreifst, suche nach Wegen, auf denen dein Gegner diesen Ratschlag missachtet hat &ndash; und nutze sie aus!</p>
+
+    <h4 id="first_most">Komm zuerst mit den meisten</h4>
+    <p>Dem amerikanischen General Nathan Forrest wird zugeschrieben, die militärische Strategie als „Komm zuerst mit den meisten“ zusammengefasst zu haben. Das ist auch bei Homeworlds ein nützliches Prinzip. Wenn du ein System bereits kontrollierst, dann bist du zuerst angekommen. Wenn dein Gegner einen <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#direct_assault">direkten Sturmangriff</a> auf dieses System beginnt, bekommst du die erste Gelegenheit zu erbeuten. Um diesen Erste-Erbeutung-Vorteil zu überwinden, muss dein Gegner mehr Ressourcen mitbringen, als du aufbieten kannst (ein größeres Schiff sowie gelbe und rote Opfer). Wenn du zuerst da warst und auch „die meisten“ hast, ist dein System gegen einen direkten Sturmangriff unangreifbar.</p>
+    <p>Dann musst du nur noch auf Katastrophen achten&hellip;</p>
+
+    <h4 id="deterrent">Ein Rot irgendwo ist ein Rot überall</h4>
+    <p>Einer der Strategie-Tipps in jedem Homeworlds-Strategie-Guide lautet: „Wenn dein Gegner Rot bekommt, bekomm auch du Rot.“ Das ist ein guter Rat. Oft spielt es kaum eine Rolle, wo die roten Schiffe sind. Wenn dein Gegner irgendwo ein rotes Schiff hat, musst du irgendwo eins bekommen, wo immer du kannst. Sonst kann dein Gegner jedes Schiff in ein System bewegen, in dem du Schiffe hast, und du kannst es nicht erbeuten (außer der Stern ist rot). Dein Gegner kann dann deine Schiffe erbeuten, indem er sein rotes Schiff opfert.</p>
+    <p>Ein einziges rotes Schiff kann gleichzeitig Invasionen in allen deinen Systemen abschrecken. Egal welches System dein Gegner zu invadieren wählt, du kannst das rote Schiff opfern und das eindringende Schiff erbeuten. Folglich verzichtet dein Gegner vielleicht ganz auf Invasionen. Ich nenne das das „Abschreckungsprinzip“.</p>
+    <p>Wenn dein Gegner umgekehrt kein Rot hat, kann dein rotes Schiff eine Invasion in <u>jedem beliebigen</u> seiner Systeme antreiben.</p>
+
+    <h5>&hellip;aber ein rotes Schiff kann nur einmal geopfert werden</h5>
+    <p>Ein einziges rotes Schiff kann Angriffe eine ganze Weile abschrecken, aber denke daran, dass ein einzelnes rotes Schiff nur einmal geopfert werden kann. Wenn dein Gegner eine Invasion startet, die dich dazu zwingt, dein einziges rotes Schiff zu opfern, dann hast du kein rotes Schiff mehr. Du könntest nun gegen eine zweite Invasion verwundbar sein, bei der dein Gegner rote Schiffe zum Opfern hat, du aber nicht. Wenn diese zweite Invasion deiner Heimatwelt gilt, verlierst du wahrscheinlich die Partie.</p>
+
+    <h4>Materialvorteil</h4>
+    <p>Wenn du einen Materialvorteil hast, solltest du oft bereit sein, Katastrophen auszulösen oder gegenseitige Opfer zu erzwingen, die beide Flotten um ähnliche Beträge verkleinern. Ein Ein-Schiff-Vorteil ist wichtiger, wenn beide Flotten klein sind, als wenn sie groß sind.</p>
+    <p>Umgekehrt: Wenn du einen Materialnachteil hast, solltest du Schiffe bauen und dir keine allzu großen Sorgen machen, wenn dein Gegner genauso viel baut. Ein Ein-Schiff-Nachteil schrumpft (proportional), wenn beide Flotten gleich schnell wachsen.</p>
+    <p>Wenn du mehr große Schiffe hast als dein Gegner, versuche, Kolonien zu belästigen, bevor sie Zeit haben, ein weiteres großes Schiff zu bekommen. Bewege dieses große Schiff in ein feindliches System mit vielen kleineren Schiffen und ohne großes Schiff zur Verteidigung. Greife alle Schiffe an, die nicht entkommen. Habe acht vor Katastrophen, die oft die beste Verteidigung gegen größere Schiffe sind.</p>
+    <p>Wenn du einen Nachteil bei großen Schiffen hast, verteile deine Flotte. Ein einsames Schiff, das weglaufen kann, ist ein unattraktives Ziel für einen eindringenden Großen. Idealerweise sollte jedes Schiff entweder</p>
+    <ul class="inner">
+      <li>In einem System mit einem großen Verteidiger sein, oder</li>
+      <li>In einem System ohne andere Schiffe sein, aber mit einem Fluchtplan (z.&nbsp;B. Schiff oder Stern ist gelb).</li>
+    </ul>
+    <p>Alternativen zu Fluchtplänen werden in <a href="#invaded">diesem Abschnitt</a> besprochen.</p>
+
+    <h3 id="invaded">Wenn deine Kolonie angegriffen wird</h3>
+    <p>Wenn eine Kolonie angegriffen wird, hast du mehr Möglichkeiten als wenn deine Heimat angegriffen wird. Deine Heimatwelt aufzugeben ist keine Option (außer du kannst ein Unentschieden erzwingen), aber oft lohnt es sich, eine bedrohte Kolonie zu evakuieren.</p>
+    <p>Wenn deine Kolonie angegriffen wird, finde heraus, welche Art von Bedrohung die Eindringlinge darstellen. Werden sie deine Schiffe erbeuten? Oder bereiten sie sich darauf vor, deine Schiffe oder sogar den Stern zu übervölkern? Oder wollten sie vielleicht nur ihr Schiff umpositionieren und haben es zur Verwirrung in deine Kolonie gestellt &ndash; eine leere Drohung?</p>
+    <p>Wenn die Drohung real ist, sind hier die üblichen Optionen:</p>
+    <ul class="inner">
+      <li><span class="action-title">Erbeute den Einbringling.</span><br>
+        Wenn der Eindringling nur die erste Welle eines Übervölkerungsversuchs war, hast du vielleicht nur deine Zeit verschwendet (und ein rotes Schiff, falls du geopfert hast).</li>
+      <li><span class="action-title">Evakuiere (renn weg).</span><br>
+        Ein einsames Schiff ist meist leicht zu evakuieren (wegbewegen, grünes Teleportieren, oder vielleicht hast du ein y1, das es wert ist, anderswo geopfert zu werden).
+        Mehrere Schiffe können per gelbem Opfer entkommen, umso besser, wenn eines davon ein bedrohtes Schiff ist.
+        Jedes einzelne Schiff kann sich zumindest der Erbeutung entziehen, indem es sich opfert, selbst wenn man mit der Aktion nichts anfangen will.</li>
+      <li><span class="action-title">Übervölkere den Eindringling.</span><br>
+        Wenn seine Drohung das Erbeuten deiner Schiffe ist, kannst du vielleicht sein Schiff kostengünstig übervölkern.</li>
+      <li><span class="action-title">Übervölkere den Stern.</span><br>
+        Wenn sein Schiff mehr wert ist als alle deine Schiffe im System, erwäge, den ganzen Ort in die Luft zu jagen!</li>
+      <li><span class="action-title">Gegenangriff.</span><br>
+        Du weißt wahrscheinlich, was dein Gegner mit seinem nächsten Zug vorhat (deine Schiffe erbeuten oder übervölkern), also möchtest du vielleicht anderswo eine Drohung aufbauen, auf die er zuerst reagieren will (z.&nbsp;B. dich darauf vorbereiten, ein großes Schiff zu bauen oder eines seiner Systeme zu invadieren). Wenn du weiter Drohungen aufbaust, wird er vielleicht nie dazu kommen, die Invasion abzuschließen.
+        Wenn das eindringende Schiff groß ist, hat es vielleicht gerade eine Kolonie verlassen, in der es der einzige große Verteidiger war. Wenn ja, erwäge, die jeweilige Kolonie zu invadieren, besonders wenn diese Kolonie mehr Schiffe hat, die du erbeuten könntest, als die deine, die gerade angegriffen wurde.</li>
+      <li><span class="action-title">Ignoriere die Drohung.</span><br>
+        Manchmal kannst du anderswo etwas Wertvolleres bekommen. Wenn du zum Beispiel ein paar große Schiffe bauen kannst, willst du das vielleicht tun, statt kleinere Kolonie-Schiffe zu retten.</li>
+    </ul>
+    <p>Gleichzeitige Invasionen mehrerer Kolonien sind wie Schach mit Doppelschach. Es ist schwierig, mit mehreren Drohungen umzugehen.</p>
+    <p>Wenn du in die Offensive gehst, suche einfach nach Kolonien, in denen dein Gegner eine der im Verteidigungsabschnitt besprochenen Schwächen hat. Und nutze sie dann aus!</p>
+  </section>
+
+  <!-- Kapitel 4: Spätes Spiel -->
+  <section id="spaetes-spiel">
+    <h2>Spätes Spiel (wie man gewinnt) <span class="tag">Kapitel 4</span></h2>
+
+    <h3>Doomsday-Maschinen</h3>
+    <p>Unvermeidliches Verderben kann länger als einen Tag dauern.</p>
+    <p>Das Zerstören einer Heimatwelt durch Sternabriss erfordert zwei Katastrophen, und der Verteidiger wird versuchen, jede davon zu verhindern. Der naheliegendste Weg, jede mögliche Verteidigung zu umgehen, ist, jede Übervölkerung in einem einzigen Zug zu erzeugen. Die Alles-auf-einmal-Technik wird mit der <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#doomsday_machine">traditionellen Doomsday-Maschine</a> erreicht.</p>
+    <p>Traditionelle Zwei-Zug-Doomsday-Maschinen sind schwer zu bauen. Insbesondere musst du in der Lage sein, zwei große gelbe Schiffe zu opfern. Es gibt nur drei große gelbe Stücke im Spiel, und wenn zwei davon vom Feind kontrolliert werden (entweder als Schiffe oder als Sterne), kann eine traditionelle Doomsday-Maschine unmöglich sein.</p>
+    <p>Es gibt jedoch Doomsday-Maschinen mit geringeren Materialanforderungen. Sie brauchen nur zusätzliche Züge zum Betrieb. Doomsday-Maschinen zerstören die zwei Sterne meist in zwei getrennten „Phasen“: erst Schiffe heranbringen, um den einen Stern zu zerstören, dann Schiffe heranbringen, um den zweiten Stern zu zerstören.</p>
+    <p>Jede Phase kann 1–3 Züge dauern. Wenn jede Phase in einem Zug abgeschlossen werden kann, dann ist es eine traditionelle Doomsday-Maschine.</p>
+    <p>Dein Gegner bemerkt den Bau deiner Doomsday-Maschine vielleicht nicht, aber selbst Anfänger bekommen es mit, wenn du ein Schiff in ihre Heimatwelt bewegst, ganz zu schweigen davon, wenn du einen Stern zerstörst. Sie werden in höchste Alarmbereitschaft versetzt, nach deinem Plan suchen und nach einem Weg suchen, ihn zu stoppen. Du musst erwarten, dass dein Gegner deiner tödlichen Drohung allen möglichen Widerstand entgegensetzt. In den nächsten zwei Abschnitten besprechen wir Mehr-Zug-Doomsday-Phasen und wie dein Gegner mitten in einer Phase Verteidigung versuchen kann.</p>
+    <p>Selbst wenn du alle Stücke bereit hast, gibt es eine Ein-Zug-Pause zwischen den Phasen einer Doomsday-Maschine. Das nachhallende Dröhnen der Supernova des ersten Sterns klingt ab, dein Gegner ist am Zug und weiß, dass es an der Zeit ist, „alles oder nichts“ zu spielen. Erwarte, dass er schnell deine Heimat oder die Bestandteile der anderen Hälfte deiner Doomsday-Maschine angreift. Siehe <a href="#swift_victory">diesen Abschnitt</a> für eine Besprechung des gegnerischen Widerstands zwischen den Phasen.</p>
+
+    <h4>Einen Stern in zwei Zügen zerstören</h4>
+    <p>Eine Zwei-Zug-Doomsday-Phase bringt in nur zwei Zügen drei sternfarbene Schiffe in die Heimat deines Gegners. Natürlich musst du ein y2 oder y3 opfern, um auf einmal zwei Schiffe dorthin zu bringen. <b>So soll es funktionieren:</b></p>
+    <ol>
+      <li>Du bewegst ein sternfarbenes Schiff in die Heimat deines Gegners. Das lässt sich oft mit einer Grundaktion erreichen.</li>
+      <li>Dein Gegner erbeutet dein eindringendes Schiff.</li>
+      <li>Du opferst Gelb, um zwei weitere sternfarbene Schiffe in die Heimat deines Gegners zu bewegen und die Katastrophe auszulösen.</li>
+    </ol>
+    <p>Es ist zu erwarten, dass dein Gegner in Schritt 2 erbeutet, aber er könnte entscheiden, dass die Erbeutung unnötig ist und etwas anderes tut, etwa deine Heimat anzugreifen oder zu versuchen, den Rest deiner Doomsday-Maschine zu stören. Eine Zwei-Zug-Doomsday-Maschine verpflichtet dich zu einem Plan, dessen Abbruch teuer sein kann, also solltest du es so betrachten, dass du deinem Gegner einen freien Zug gibst. Das kommt <b>zusätzlich</b> zu dem Zug, den dein Gegner zwischen deinen Doomsday-Phasen bekommt. <b>Stelle sicher, dass du die Zeit übrig hast.</b></p>
+    <p>Die Schritte 1 und 3 können bei Bedarf vertauscht werden, aber es scheint sicherer, den Opfer-Schritt später zu setzen. Wenn bei Schritt 2 etwas schiefgeht und du abbrechen musst, bist du vielleicht froh, dass du noch kein gelbes Schiff geopfert hast.</p>
+
+    <h4>Einen Stern in drei Zügen zerstören</h4>
+    <p>Eine Drei-Zug-Doomsday-Phase erfordert gar kein gelbes Opfer. Du bewegst einfach die drei sternfarbenen Schiffe einzeln. Das <u>zweite</u> Schiff braucht allerdings zusätzliche Bedingungen, um deinen Gegner zur Erbeutung zu zwingen. Beim Einbringen des zweiten Schiffs muss normalerweise eine dieser Bedingungen erfüllt sein:</p>
+    <ul class="inner">
+      <li><b>Das zweite Schiff stellt eine Siegdrohung durch <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#direct_assault">direkten Sturmangriff</a> dar</b>, d.&nbsp;h. dein Gegner überlebt nicht, wenn das Schiff eine Chance bekommt, Erbeutungen durchzuführen. Meist heißt das, dass dein zweites Schiff groß ist und du anderswo ein großes Rot hast, das geopfert werden könnte, um ihre gesamte Heimflotte zu erbeuten.</li>
+      <li><b>Das zweite Schiff kann sich zu einer Übervölkerung hochbauen</b>, d.&nbsp;h. es gibt mindestens zwei Bank-Stücke dieser Farbe und du hast ein mittleres Grün, das du opfern könntest. Unter diesen Umständen muss dein Gegner dein zweites Schiff erbeuten (oder den Bau blockieren), um zu verhindern, dass du zwei weitere passende Schiffe baust und den Stern so durch Bauen statt durch Einbringen des dritten Schiffes zerstörst.</li>
+    </ul>
+    <b>So funktioniert eine Drei-Zug-Doomsday-Phase:</b>
+    <ol>
+      <li>Du bewegst ein sternfarbenes Schiff in die Heimat deines Gegners.</li>
+      <li>Dein Gegner erbeutet dein eindringendes Schiff.</li>
+      <li>Du bewegst ein weiteres sternfarbenes Schiff in ihre Heimat.</li>
+      <li>Dein Gegner trifft eine Wahl:
+        <ul class="inner">
+          <li>Sie erbeuten den zweiten Eindringling.
+            <ul class="inner">
+              <li>In diesem Fall kannst du einfach ein drittes sternfarbenes Schiff in ihre Heimat bewegen und die Katastrophe auslösen.</li>
+            </ul>
+          </li>
+          <li>Sie versuchen, die <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#concentration">Konzentration</a> dieser Farbe zu verringern, um die Übervölkerung zu vermeiden. Ihre Optionen sind, den ersten erbeuteten Eindringling zu opfern, zu bewegen oder zu tauschen.
+            <ul class="inner">
+              <li>Deshalb braucht dein zweites Schiff einen Backup-Plan. Du baust entweder zu einer Katastrophe auf oder erbeutest eine tödliche Menge der gegnerischen Verteidigung.</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>Du bewegst ein weiteres sternfarbenes Schiff in ihre Heimat.</li>
+    </ol>
+    <p>In Schritt 2 oder 4 kann dein Gegner beschließen, etwas völlig anderes zu tun. Wenn du nicht in deinem allerletzten Zug gewinnst, könnte dein Gegner finden, dass Verteidigung sinnlos ist, und nach anderen Möglichkeiten suchen. Die Zwei-Zug-Sternzerstörung gibt deinem Gegner einen freien Zug, aber die Drei-Zug-Zerstörung gibt ihnen <b>zwei</b>. Diese freien Züge kommen <b>zusätzlich</b> zu dem Zug, den dein Gegner zwischen deinen Doomsday-Phasen bekommt. <b>Prüfe die Stellung sehr sorgfältig</b> auf überraschende Verzweiflungs-Opfer, bevor du eine Drei-Zug-Doomsday-Phase beginnst.</p>
+    <p><b>Ein Wort der Warnung zu Rot:</b> <a href="#no_slow_red_cat">Dieser Abschnitt</a> bespricht ausführlich, dass man, wenn der Stern rot ist, das rote Schiff, das sie gerade von dir erbeutet haben, opfern und dein großes Schiff in einem einzigen Zug angreifen kann, was sich sowohl gegen die Sternzerstörung als auch gegen die Sturmangriffs-Drohung verteidigt. Mit anderen Worten: <b>Drei Züge sind zu langsam, um einen roten Stern abzureißen.</b></p>
+    <p>Auf dem Bild unten hat Beta eine Doomsday-Maschine mit zwei Drei-Zug-Phasen zusammengebaut. In der <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#doom_notation">Schreibweise, die ich im Glossar verwende</a>, ist das eine 3g/3y-Doomsday-Maschine. Beachte, dass es als 3y/3g-Maschine nicht funktionieren würde (zuerst Gelb, dann Grün zu übervölkern), weil die gelben Schiffe nötig sind, damit die grünen vorrücken.</p>
+    <figure>
+      <img src="https://i.imgur.com/Gj6FWOc.png" alt="Diagramm der 3g/3y-Doomsday-Maschine von Beta">
+    </figure>
+    <p>Beta zerstört sicher beide Heimatsterne von Alpha wie folgt:</p>
+    <table class="move-table">
+      <tr><th>Alpha</th><th>Beta</th></tr>
+      <tr><td></td><td>1...&#10;bewege g1 Betelgeuse Alpha</td></tr>
+      <tr><td>2.&#10;greife g1 Alpha an</td><td>2...&#10;bewege g3 Altair Alpha</td></tr>
+      <tr><td>3.&#10;greife g3 Alpha an</td><td>3...&#10;bewege g1 Altair Alpha&#10;Katastrophe Alpha g</td></tr>
+      <tr><td>4.&#10;handle b3 g3 Alpha</td><td>4...&#10;bewege y1 Altair Alpha</td></tr>
+      <tr><td>5.&#10;greife y1 Alpha an</td><td>5...&#10;bewege y3 Betelgeuse Alpha</td></tr>
+      <tr><td>6.&#10;greife y3 Alpha an</td><td>6...&#10;bewege y1 Altair Alpha&#10;Katastrophe Alpha y</td></tr>
+    </table>
+    <p>Im obigen Szenario muss Alpha in den Zügen 2 und 5 erbeuten, weil Beta sonst durch direkten Sturmangriff gewinnen könnte, indem er r3 opfert, <u>oder</u> die Katastrophen erreichen, indem er g3 opfert. In vielen Szenarien kann sich der Verteidiger die kleinen eindringenden Schiffe einfach ignorieren und den Zug produktiv nutzen.</p>
+
+    <h4 id="no_slow_red_cat">Keine langsame rote Katastrophe</h4>
+    <p>Dein Gegner kann gegen dich normalerweise keine rote Katastrophe verursachen, indem er rote Schiffe einzeln bewegt. Wenn er das versucht, sollte Folgendes passieren:</p>
+    <ol>
+      <li>Er bewegt ein rotes Schiff in dein System.</li>
+      <li>Du erbeutest das erste rote Schiff.</li>
+      <li>Er bewegt ein weiteres rotes Schiff in dein System.</li>
+      <li>Du opferst das erste rote Schiff, um das zweite rote Schiff zu erbeuten.</li>
+      <li>Sie sehen ihren Fehler ein.</li>
+    </ol>
+    <p>Zum Beispiel hat Beta in der Stellung unten gerade einen Fehler gemacht, indem er r3 in Alphas Heimat bewegt hat. Alpha sollte das r1 opfern und den Eindringling erbeuten. Beta hat nun Reue.</p>
+    <figure>
+      <img src="https://i.imgur.com/SfK41v1.png" alt="Diagramm: Beta blundert mit r3 in Alphas Heimat">
+    </figure>
+    <p>Du solltest deine eigene Situation allerdings sorgfältig prüfen. Du musst ein Schiff haben, das groß genug ist, um alle eindringenden Roten zu erbeuten, und &ndash; wenn du einen roten System-Marker verteidigst &ndash; solltest du dein einziges großes Schiff nicht rot sein lassen. Wenn dein einziges großes Schiff genauso rot ist wie ein System-Marker, dann kannst du das r3 nicht opfern, um ein eindringendes r3 zu erbeuten, sodass eine langsame rote Katastrophe passieren kann, wenn dein Gegner mit ihrem zweiten roten Schiff einzieht.</p>
+
+    <h3>Grundlegender direkter Sturmangriff</h3>
+    <p>Von den drei <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#victory_paths">Siegpfaden</a> scheint der direkte Sturmangriff am wenigsten Beachtung zu bekommen. Jeder Strategie-Guide redet über Doomsday-Maschinen (den sichersten Weg zur Sternzerstörung) und den Bluebird-Fehler (eine spielverlierende Flottenkatastrophe zuzulassen). Neue Spieler haben vielleicht keine klare Vorstellung davon, wie ein direkter Sturmangriff abläuft, sodass ihre erste Begegnung damit wahrscheinlich eine Niederlage ist, die sie nicht kommen sahen.</p>
+    <p>Typischerweise hat jeder Spieler ein großes Schiff in seiner Heimatwelt und irgendwo ein rotes Schiff (das er opfern könnte). Wenn dein Gegner kein rotes Schiff hat, hat er wahrscheinlich zumindest ein <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#planetary_defense">planetares Verteidigungssystem</a>. Wenn du also irgendein Schiff in die Heimat deines Gegners bewegst, erbeuten sie es einfach, oder nicht?</p>
+    <p>Nicht, wenn du mit mehreren Schiffen gleichzeitig einziehst, sodass nicht alle erbeutet werden können. Die Verteidigung deines Gegners bestimmt die Größe der Invasionsflotte, die du brauchst. Ich muss einige Variablen definieren, um den nächsten Abschnitt nicht zu wortreich zu machen.</p>
+    <ul class="inner">
+      <li>Die Anzahl der großen Schiffe, die dein Gegner in seiner Heimat hat, ist L.</li>
+      <li>Das größte rote Schiff deines Gegners hat die Größe R.
+        <ul class="inner">
+          <li>Wenn er keine roten Schiffe, aber einen roten Heimatstern hat, zählt das als ein kleines rotes Schiff, also R=1.</li>
+          <li>Wenn er keinen Zugang zu Rot hat, ist R=0.</li>
+          <li>Wenn er ein großes Rot in der Heimat hat <u>und</u> das sein einziges großes Schiff in der Heimat ist, <u>dann ignoriere dieses Schiff bei der Bestimmung von R</u>, denn dieses R3 kann nicht geopfert werden, um große Eindringlinge zu erbeuten.</li>
+        </ul>
+      </li>
+    </ul>
+    <p>Hier ist, was du für das brauchst, was ich den „grundlegenden“ direkten Sturmangriff nenne:</p>
+    <ul class="inner">
+      <li>R+1 große Schiffe, die bereitstehen, in die Heimat deines Gegners vorzurücken. Das sind die „Eindringlinge“.</li>
+      <li>Ein gelbes Schiff der Größe R+1 (nicht einer der Eindringlinge).</li>
+      <li>Ein rotes Schiff der Größe R+L (nicht einer der Eindringlinge).</li>
+    </ul>
+    <p>Hier ist der Schlachtplan:</p>
+    <ol>
+      <li>Du opferst dein gelbes Schiff und bewegst deine R+1 großen Schiffe in die Heimat deines Gegners.</li>
+      <li>Sie opfern ihr größtes Rot, um R deiner eindringenden Großen zu erbeuten (du hast immer noch eins übrig).</li>
+      <li>Du opferst dein rotes Schiff, um die R Schiffe zu erbeuten, die sie gerade erbeutet haben, sowie die L großen Schiffe, die sie von Anfang an hatten.</li>
+    </ol>
+    <p>Du hast nun zwei oder mehr große Schiffe in der Heimat deines Gegners und sie haben keine. Meist ist ihre einzige Verteidigung zu diesem Zeitpunkt (abgesehen von einem Gegenangriff), deine Großen zu katastrophieren.</p>
+    <p>Wenn R+L größer als 3 ist, funktioniert ein <u>grundlegender</u> direkter Sturmangriff nicht. Theoretisch könntest du eine Zwei-Wellen-Invasion mit mehr als drei Schiffen machen, aber das ist komplizierter, als ich hier darstellen werde.</p>
+    <p>Verglichen mit Siegen per Katastrophe können direkte Sturmangriffe schwer zu planen sein. Wenn du invadierst und erbeutest, müssen deine Schiffe am Leben bleiben (anders als wenn du Schiffe in Katastrophen schiebst). Dein Gegner hat Zeit, zurückzuschlagen, also kann es verwirrend werden. Du musst deinen eigenen Fall sorgfältig prüfen, um herauszufinden, wie du invadieren kannst.</p>
+
+    <h4>Beispiele</h4>
+    <p>Unten sind einige Stellungen, in denen der Spieler „Beta“ einen direkten Sturmangriff auf die feindliche Heimatwelt erwägt. Unter jeder Abbildung steht eine Analyse, einschließlich einer Tabelle der erwarteten Kommandos, falls Beta eine Invasion versucht.</p>
+
+    <figure>
+      <img src="https://i.imgur.com/GIP0pwa.png" alt="Diagramm: grundlegender Sturmangriff, Beispiel 1">
+    </figure>
+    <p>Beta gewinnt mit einem grundlegenden direkten Sturmangriff.</p>
+    <ul class="inner">
+      <li>Alphas maximale rote Macht ist R=1.</li>
+      <li>Alpha hat L=1 großes Schiff in der Heimat.</li>
+      <li>Beta kann R+1=2 große Schiffe auf einmal in Alphas Heimat bewegen.</li>
+      <li>Erwartungsgemäß erbeutet Alpha R=1 der Eindringlinge.</li>
+      <li>Beta kann dann alle R+L=2 Großen in Alphas Heimat erbeuten.</li>
+    </ul>
+    <table class="move-table">
+      <tr><th>Alpha</th><th>Beta</th></tr>
+      <tr><td></td><td>1...&#10;opfere y2&#10;bewege y3 X Alpha&#10;bewege g3 X Alpha</td></tr>
+      <tr><td>2.&#10;greife y3 Alpha an</td><td>2...&#10;opfere r2 Beta&#10;greife y3 Alpha an&#10;greife g3 Alpha an</td></tr>
+    </table>
+
+    <hr>
+
+    <figure>
+      <img src="https://i.imgur.com/AjhTs5O.png" alt="Diagramm: grundlegender Sturmangriff, Beispiel 2">
+    </figure>
+    <p>Beta gewinnt mit einem grundlegenden direkten Sturmangriff.</p>
+    <ul class="inner">
+      <li>Alphas maximale rote Macht ist R=2 (<u>nicht</u> R=3, denn ihr R3 ist das einzige große Schiff in der Heimat und kann nicht für Erbeutungen geopfert werden).</li>
+      <li>Alpha hat L=1 großes Schiff in der Heimat.</li>
+      <li>Beta kann R+1=3 große Schiffe auf einmal in Alphas Heimat bewegen.</li>
+      <li>Erwartungsgemäß erbeutet Alpha R=2 der Eindringlinge.</li>
+      <li>Beta kann dann alle R+L=3 Großen in Alphas Heimat erbeuten.</li>
+    </ul>
+    <table class="move-table">
+      <tr><th>Alpha</th><th>Beta</th></tr>
+      <tr><td></td><td>1...&#10;opfere y3 Beta&#10;bewege y3 X Alpha&#10;bewege g3 X Alpha&#10;bewege b3 X Alpha</td></tr>
+      <tr><td>2.&#10;opfere r2 Y&#10;greife y3 Alpha an&#10;greife b3 Alpha an</td><td>2...&#10;opfere r3 Beta&#10;greife y3 Alpha an&#10;greife b3 Alpha an&#10;greife r3 Alpha an</td></tr>
+      <tr><td>3.&#10;baue g1 Alpha</td><td>3...&#10;opfere r3 Alpha&#10;greife g1 Alpha an&#10;greife g1 Alpha an&#10;passe</td></tr>
+    </table>
+
+    <hr>
+
+    <figure>
+      <img src="https://i.imgur.com/fFq73c9.png" alt="Diagramm: grundlegender Sturmangriff, Beispiel 3">
+    </figure>
+    <p>Beta gewinnt mit einem grundlegenden direkten Sturmangriff.</p>
+    <table class="move-table">
+      <tr><th>Alpha</th><th>Beta</th></tr>
+      <tr><td></td><td>1...&#10;opfere y3 Beta&#10;bewege y3 X Alpha&#10;bewege g3 X Alpha&#10;bewege b3 X Alpha</td></tr>
+      <tr><td>2.&#10;opfere r1 Y&#10;greife y3 Alpha an</td><td>2...&#10;opfere r3 Beta&#10;greife y3 Alpha an&#10;greife g3 Alpha an&#10;greife g3 Alpha an</td></tr>
+    </table>
+
+    <hr>
+
+    <figure>
+      <img src="https://i.imgur.com/dKyVct7.png" alt="Diagramm: gescheiterter grundlegender Sturmangriff">
+    </figure>
+    <p>Ein <u>grundlegender</u> direkter Sturmangriff kann nicht funktionieren, denn</p>
+    <ul class="inner">
+      <li>Alpha hat R=3 rote Macht und</li>
+      <li>Beta kann unmöglich R+1=4 Schiffe auf einmal in Alphas Heimat bringen.</li>
+    </ul>
+    <p>Wenn Beta also mit dreien invadiert, werden die Eindringlinge einfach erbeutet.</p>
+    <table class="move-table">
+      <tr><th>Spieler 1</th><th>Spieler 2</th></tr>
+      <tr><td></td><td>1...&#10;opfere y3 Beta&#10;bewege y3 X Alpha&#10;bewege g3 X Alpha&#10;bewege b3 X Alpha</td></tr>
+      <tr><td>2.&#10;opfere r3 Alpha&#10;greife y3 Alpha an&#10;greife g3 Alpha an&#10;greife b3 Alpha an</td><td></td></tr>
+    </table>
+    <p>Wenn Beta jedoch nur zwei Schiffe in Alphas Heimat bewegt, ist Alpha gezwungen, ihr einziges rotes Schiff zu opfern, was Alphas rote Macht auf R=0 senkt. Gelb kann dann eine zweite Stufe mit R+1=1 großem Schiff starten und gewinnen.</p>
+    <table class="move-table">
+      <tr><th>Alpha</th><th>Beta</th></tr>
+      <tr><td></td><td>1...&#10;opfere y3 Beta&#10;bewege b3 X Alpha&#10;bewege g3 X Alpha&#10;passe</td></tr>
+      <tr><td>2.&#10;opfere r3 Alpha&#10;greife b3 Alpha an&#10;greife g3 Alpha an&#10;passe</td><td>2...&#10;bewege y3 X Alpha</td></tr>
+      <tr><td>3.&#10;handle b3 r3 Alpha</td><td>3...&#10;opfere r3 Beta&#10;greife r3 Alpha an&#10;greife g3 Alpha an&#10;greife g3 Alpha an</td></tr>
+    </table>
+
+    <hr>
+
+    <figure>
+      <img src="https://i.imgur.com/iiDvn42.png" alt="Diagramm: Invasion scheitert trotz genug Material">
+    </figure>
+    <p>Beta hat genug <u>Material</u> für einen grundlegenden direkten Sturmangriff, aber die Invasion scheitert trotzdem, weil die eindringenden Schiffe beide blau sind und Alpha sich mit einer Katastrophe verteidigen kann.</p>
+    <table class="move-table">
+      <tr><th>Alpha</th><th>Beta</th></tr>
+      <tr><td></td><td>1...&#10;opfere y2 Beta&#10;bewege b3 X Alpha&#10;bewege b3 X Alpha</td></tr>
+      <tr><td>2.&#10;baue b1 Alpha&#10;Katastrophe Alpha b</td><td></td></tr>
+    </table>
+
+    <hr>
+
+    <figure>
+      <img src="https://i.imgur.com/Yt00SPr.png" alt="Diagramm: erfolgreiche Invasion trotz gescheitertem grundlegendem Sturmangriff">
+    </figure>
+    <p>Ein <u>grundlegender</u> direkter Sturmangriff würde scheitern, denn</p>
+    <ul class="inner">
+      <li>Alpha hat L=2 große Schiffe und R=1 rote Macht und</li>
+      <li>Beta hat kein rotes Schiff der Größe L+R=3.</li>
+    </ul>
+    <p>Beta kann jedoch trotzdem eine erfolgreiche Invasion durchführen, indem es Alphas einziges rotes Schiff erbeutet (statt der Formel des grundlegenden Sturmangriffs zu folgen und ein großes Schiff zu erbeuten).</p>
+    <table class="move-table">
+      <tr><th>Alpha</th><th>Beta</th></tr>
+      <tr><td></td><td>1...&#10;opfere y2 Beta&#10;bewege g3 V Alpha&#10;bewege b3 V Alpha</td></tr>
+      <tr><td>2.&#10;greife g3 Alpha an</td><td>2...&#10;opfere r1 Beta&#10;greife r1 Alpha an</td></tr>
+      <tr><td>3.&#10;handle g3 r3 Alpha</td><td>3...&#10;greife r3 Alpha an</td></tr>
+    </table>
+    <p>Wichtig ist, dass Alpha keine Möglichkeit hatte, mehr Rot zu bekommen, sobald die Invasion begonnen hatte. Wenn Alpha ein rotes Schiff in seiner Heimat hätte bauen können, nachdem Beta invadiert hatte, dann hätte Alpha immer noch ein rotes Schiff gehabt, nachdem Beta eins erbeutet hatte. Dann hätte Alpha es zurückerbeuten können, und die Stellung hätte sich endlos wiederholt, sodass das Spiel unentschieden geendet hätte.</p>
+
+    <h3 id="swift_victory">Plane den vollständigen, schnellen Sieg</h3>
+    <p>Wie die Homeworlds-Regeln sagen:</p>
+    <blockquote>
+      „Einer der einfachsten Wege, dieses Spiel zu verlieren, ist,
+      einen Angriff zu starten, der nicht gelingt, deinen Gegner
+      auszulöschen, aber dein eigenes Reich verwundbar zurücklässt.
+      Das passiert meist, wenn du die Hälfte der Heimatwelt
+      eines Spielers ausschaltest und du dabei weniger Schiffe
+      und dein Gegner eine besser vernetzte Heimatwelt
+      bekommt als zuvor. Plane den totalen Sieg!“
+    </blockquote>
+    <p>Das ist ein guter Rat, und ich möchte einige Details hinzufügen. Das Zerstören eines der Heimatsterne deines Gegners hat drei destabilisierende Auswirkungen auf das Spiel, von denen jede neue Möglichkeiten für deinen Gegner eröffnen kann, deinen Plan plötzlich zu ruinieren.</p>
+    <h4>1. Du hast Schiffe verloren</h4>
+    <p>Das Zerstören eines der Sterne deines Gegners kostet dich meist mindestens drei Schiffe. Eine Zwei-Zug-Zerstörung kann mit drei kleinen sternfarbenen Schiffen und einem y2 erreicht werden &ndash; wenn du das Glück hast, alle drei kleinen Schiffe der Sternfarbe zu besitzen. Sonst zerstörst du zwei oder mehr deiner eigenen Mittleren und/oder mindestens ein Großes (mehr über die Schiffsgrößen-Kombinationen, mit denen man Sterne zerstören kann, <a href="#doomsday">hier</a>). In vielen Partien ist so viel Schiffszerstörung genug, um das Kräftegleichgewicht zugunsten deines Gegners zu drehen.</p>
+    <h4>2. Die Heimatwelt deines Gegners hat Verbindungen gewonnen</h4>
+    <p>Nach der Zerstörung eines Sterns ist die Heimat deines Gegners mit Systemen verbunden, die Sterne in der Größe des zerstörten Sterns haben (das <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#hyperspace_bypass">Hyperraum-Überbrückungsprinzip</a>). Wenn dieser Stern eine Größe hatte, die auch in deiner eigenen Heimat vorkommt, sind eure Heimatwelten nun verbunden (angenommen, das Universum war ursprünglich groß). Verbundene Heimatwelten können deinem Gegner eine Gelegenheit zum Gegenangriff geben.</p>
+    <h4>3. Die Bank ist wieder aufgefüllt</h4>
+    <p>Die Bank hat nun die Stücke aus deiner Katastrophe, die Sterne aller Systeme, die du aufgegeben hast, und dein geopfertes Schiff (falls du eines benutzt hast). Dein Gegner kann die Stücke, die du gerade zurückgegeben hast, vielleicht tauschen oder bauen. Wenn du die Vorstöße deines Gegners zuvor kaum eindämmen konntest, könnte die neuen Schiffe genau das sein, was er braucht, um wieder ins Spiel zu kommen. Das gilt besonders, wenn dein Zug ein y3-Stück in die Bank zurückgab. Ein neues y3-Schiff könnte deinem Gegner die Beweglichkeit geben, die er braucht, um dir Ärger zu machen.</p>
+    <h4>&hellip;also minimiere das Comeback-Risiko</h4>
+    <p>Das Zerstören eines Heimatsterns kann eine Partie auf die oben genannten Arten ins Chaos stürzen, und du solltest die Dauer der chaotischen Phase minimieren, indem du den zweiten Stern so schnell wie möglich zerstörst. Wenn dein Plan zum Abriss des zweiten Sterns verlangt, dass du mehr Schiffe baust oder Schiffe in andere Systeme bewegst, versuche, diese Vorbereitungszüge <u>vor</u> der Zerstörung des ersten Sterns auszuführen.</p>
+  </section>
+
+  <!-- Kapitel 5: Sonstiges -->
+  <section id="sonstiges">
+    <h2>Sonstiges <span class="tag">Kapitel 5</span></h2>
+
+    <h3 id="always_cat">Katastrophen immer auslösen</h3>
+    <p>Dieser große Abschnitt behandelt den sehr seltenen Fall, dass eine Übervölkerung von einem Spieler erzeugt wird, der keine Katastrophe auslösen will. Ich rede von einer Übervölkerung, die am <u>Ende</u> des Zuges des Spielers existieren wird, nicht wenn ein Schiff beiläufig eine Übervölkerung erzeugt, während es ein System durchquert, während es sich mit einem gelben Opfer zweimal bewegt.</p>
+    <p>Übervölkerungen werden fast immer absichtlich erzeugt, damit das Auslösen der Katastrophe die Ressourcen des Gegners zerstört. Wenn ich Leuten das Spiel zum ersten Mal beibringe, erwähne ich normalerweise nicht, dass Katastrophen technisch gesehen optional sind. Manchmal benutze ich die Wörter „Übervölkerung“ und „Katastrophe“ austauschbar. Aber mehrere Leute haben mich gefragt, ob es je eine gute Idee sein könnte, am Ende des eigenen Zuges eine Übervölkerung auf dem Brett zu lassen, deshalb will ich das Thema hier gründlich untersuchen.</p>
+    <p>Für eine Idee davon, warum es nicht normal ist, eine Übervölkerung zu erzeugen, bei der man die Katastrophe nicht will, wirf einen Blick auf <a href="https://www.youtube.com/watch?v=ZAIn7kDugGE&t=822s">diese Homeworlds-Theater-Folge</a>. Der Spieler, der die Übervölkerung erzeugte, rief keine Katastrophe aus und hoffte einfach, dass sein Gegner es auch nicht täte. Ein Ding der Unmöglichkeit. Wenn du keine Katastrophe willst, solltest du keine Übervölkerung aufbauen. Dieser Zug war so schlecht, dass die nächste HW-Theater-Folge komplett darum ging, die Partie von diesem Punkt an mit einem anderen Zug neu zu spielen.</p>
+
+    <h4>Ja, du solltest (fast) sicher die Katastrophe ausrufen</h4>
+    <p>Ich beginne damit, darzulegen, dass du, wenn dein Zug aus irgendeinem Grund <u>endet</u>, während auf dem Brett eine Übervölkerung liegt, immer die Katastrophe auslösen solltest.</p>
+    <ul class="inner">
+      <li>Wenn es eine Katastrophe ist, die dir zum Sieg verhilft (deine Gewinnchancen erhöht), dann solltest du sie offensichtlich auslösen. Das ist normalerweise, was in Partien passiert.</li>
+      <li>Wenn es eine Katastrophe ist, die die Gewinnchancen deines Gegners verbessert, dann wird dein Gegner (<u>falls auch er</u> glaubt, dass die Katastrophe ihm hilft) sie in seinem Zug auslösen wollen. Und außerdem: Wenn du sie auslösen lässt, könnte er einen Weg finden, aus dem Auslösen der Katastrophe einen Vorteil zu ziehen, <u>nachdem</u> er eine andere Aktion ausgeführt hat (etwa ein großes Schiff zu bauen, das nach der Katastrophe nicht mehr verfügbar wäre). Es ist also nicht schlechter und möglicherweise besser, wenn du sie selbst auslöst.
+        <br>
+        Wenn du die Katastrophe nicht wolltest, hättest du die Übervölkerung nicht aufbauen sollen. Aber wenn du irgendwie in eine unerwünschte Übervölkerung gezwungen wirst, solltest du die Katastrophe trotzdem auslösen.
+        <br>
+        Das Thema des gesamten nächsten Abschnitts ist der Satz „falls auch er glaubt, dass die Katastrophe ihm hilft“.</li>
+      <li>Wenn es eine Katastrophe ist, die die Gewinnchancen keines der beiden Spieler verbessert, dann spielt es natürlich keine Rolle, ob du sie auslöst. Genau wie bei der „schlechten“ Katastrophe im vorherigen Punkt schadet das Ausrufen der Katastrophe nicht deinen Chancen.</li>
+    </ul>
+    <p>Menschliche Berechnungen in Homeworlds-Stellungen sind nicht perfekt, also weißt du vielleicht nicht sicher, ob eine Katastrophe gut, schlecht oder neutral ist. Aber wie ich gerade dargelegt habe, solltest du alle Arten von Katastrophen auslösen, also spielt es nicht einmal eine Rolle, ob du dir ganz sicher bist, welche Art es ist. Löse sie trotzdem aus.</p>
+    <figure>
+      <img src="https://i.imgur.com/zR4p9no.png" alt="Extensive-Form-Spielbaumdiagramm">
+    </figure>
+    <p>Betrachte das obige Extensive-Form-Spielbaumdiagramm. Wenn Alice die Katastrophe nicht auslöst, kann Bob zwischen den Zuständen A, B und C wählen. Bob sollte den Zustand wählen, der für ihn am besten ist (und damit für Alice am schlechtesten). Wenn Alice die Katastrophe doch auslöst, schränkt sie Bobs Optionen ein, weil Zustand A garantiert ist. Welcher Zustand der drei für Alice der schlechteste ist, wählt Bob genau den. Das Ergebnis ist gleich, ob Alice die Katastrophe auslöst oder Bob sie überlässt. Daher kann Alice die Strategie, Katastrophen am Ende ihres Zuges immer auszulösen, nicht übertreffen.</p>
+
+    <h4>&hellip;es sei denn, du willst wirklich auf Psychologie vertrauen</h4>
+    <p>Also solltest du theoretisch <u>nie</u> eine Übervölkerung nach deinem Zug auf dem Brett lassen. Strikte spieltheoretische Logik diktiert, dass jede Übervölkerung zu einer Katastrophe werden sollte. Aber es gibt mehrere Rechtfertigungen, Katastrophen nicht auszulösen, die auf dem Glauben an einen unvollkommenen mentalen Zustand des Gegners beruhen (niemand denkt so perfekt, wie es das spieltheoretische Argument verlangt). Du könntest dich dafür entscheiden, eine für dich schlechte Katastrophe als Wette nicht auszulösen, dass dein Gegner sie aus irgendeinem Grund auch nicht auslöst. In dem Fall haben sie dir einen weiteren Zug geschenkt, um die Übervölkerung zu deinem Vorteil aufzulösen.</p>
+
+    <h5>Gegner hat andere Überzeugungen</h5>
+    <p>Wirf einen Blick auf das obige Diagramm. Nehmen wir an, Alice denkt, dass Zustand C für sie der beste ist (und damit der schlechteste für Bob), aber Alice vermutet aus irgendeinem Grund, dass Bob glaubt, Zustand C sei eigentlich der <u>beste</u> für Bob. Alice möchte gern, dass die Partie Zustand C erreicht, und sie erwartet, dass Bob Zustand C ebenfalls bevorzugt. Alice ignoriert rationalerweise die Übervölkerung und hofft, dass sie richtig liegt, dass Bob sie ebenfalls ignorieren wird.</p>
+    <p>In Bobs Zug glaubt er (fälschlicherweise, in Alices Meinung), dass Zustand C für ihn am besten ist. Er will die Katastrophe nicht auslösen, und wenn er die Übervölkerung nicht auf andere Weise beseitigen kann, ist Bob in derselben Lage wie gerade Alice; er fragt sich, ob er die schlechte Katastrophe auslösen soll. Da sie gerade auf die Gelegenheit verzichtet hat, die Katastrophe auszulösen, hat Alice Bob einen Hinweis gegeben: Bob sollte <u>wissen</u>, dass Alice glaubt, die Katastrophe sei schlecht für sie, <u>und</u> dass sie denkt, Bob denke, die Katastrophe sei schlecht für ihn (denn, wie ich gerade dargelegt habe, nur dann würde Alice sich entscheiden, sie nicht auszulösen). Wenn Bob also seine Meinung nicht geändert hat, dass Zustand C besser ist als die Alternative (Zustand B), dann könnte er es mit derselben Begründung wie Alice ablehnen, die Katastrophe auszulösen. Das könnte so weitergehen, bis ein Spieler einen Weg findet, eines der an der Übervölkerung beteiligten Schiffe zu tauschen, zu bewegen oder zu opfern.</p>
+    <p>Beachte, dass Alices Entscheidung, die Übervölkerung zu ignorieren, nicht wirklich aus der Meinungsverschiedenheit der Spieler darüber entsteht, welcher Zustand welchem Spieler nützt. Alines Entscheidung beruht auf Alines <u>Überzeugung</u>, dass Bobs mentale Berechnungen sich von ihren eigenen unterscheiden. Wenn Bobs Berechnungen anders sind, Alice es aber nicht weiß, sollte Alice die Katastrophe auslösen.</p>
+    <p>Homeworlds ist ein Nullsummenspiel, also können nicht beide recht haben: Wenn Zustand C für Alice besser ist als A oder B, dann ist Zustand C für Bob schlechter als A oder B. Aber es gibt verschiedene Gründe, weshalb sie uneinig sein könnten. Wahrscheinlich liegt es daran, dass beide Fehler machen. Niemand kann perfekt berechnen, wie sich eine Katastrophe auf den Rest der Partie auswirkt (außer wenn sie fast vorbei ist). Wenn Alice Bob gut genug kennt, weiß sie vielleicht, welche Arten von Rechenfehlern er tendenziell macht und wie das seine Bewertung einer Katastrophe beeinflusst.</p>
+    <p>Zum Beispiel: Angenommen, Bob überschätzt (in Alines Meinung) die Stärke großer Schiffe. Nehmen wir an, die Übervölkerung umfasst drei von Alines mittleren Schiffen und eines von Bobs großen Schiffen. Alice könnte denken, dass ihre drei Mittleren mehr wert sind als Bobs Großes, aber Alice weiß auch, dass Bob denkt, ihr Großes sei besser als Alines drei Mittleren. Alice verzichtet gern auf das Auslösen der Katastrophe, und (angenommen, Alice liegt richtig, wie Bob denkt) wird Bob sie auch nicht auslösen.</p>
+    <p>Neben Rechenfehlern können andere Dinge dazu führen, dass Spieler unterschiedliche Überzeugungen haben. Wenn zum Beispiel mit Zeitkontrolle gespielt wird, könnte jeder Spieler denken, dass er unter Zeitdruck eher Fehler macht als sein Gegner. Wenn die Partie in die Länge gezogen wird, geraten beide Spieler unter Zeitdruck, also denkt jeder Spieler, dass er in einer langen Partie im Nachteil sein wird. Wenn es eine Katastrophe gibt, die erwartungsgemäß die Partie verlängern wird (aber die sonst keinem Spieler einen Vorteil verschafft), dann wird jeder Spieler denken, dass das Auslösen der Katastrophe schlecht für ihn ist. Wenn du die Überzeugung deines Gegners kennst, dass er anfälliger für Zeitdruck ist als du (das Gegenteil deiner Überzeugung), dann ist es vernünftig, die part-verlängernde Katastrophe nicht auszulösen.</p>
+    <p>Ebenso ist Energie für Konzentration eine begrenzte Ressource, die verwaltet werden muss, selbst in einer Partie ohne formale Zeitkontrolle. Wenn du glaubst, dass du müder bist als dein Gegner, aber glaubst, dass dein Gegner denkt, er sei müder als du, dann kannst du vernünftigerweise eine part-verlängernde Katastrophe nicht auslösen.</p>
+    <p>Die Beispiele oben nehmen als Prämisse, dass eine Katastrophe, die für beide Spieler ähnliche Mengen Material zerstört, tendenziell die Partie länger dauern lässt. Meiner Erfahrung nach werden Katastrophen (jedenfalls die in <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#colony">Kolonien</a>) oft von mehreren Zügen des Wiederaufbaus für beide Spieler gefolgt, was das Spiel verlangsamt. Dieses Prinzip gilt definitiv nicht für Katastrophen, die einen Heimatstern betreffen; die tendieren dazu, das Spiel dramatisch <a href="#swift_victory">zu beschleunigen</a>. Vielleicht glaubst du, dass die Katastrophe in deiner Partie die Partie eher früher beenden wird, als wenn keine Katastrophe passierte. In dem Fall drehe einfach die Überzeugungen aus den früheren Argumenten um. Wenn jeder Spieler glaubt, selbst <u>weniger</u> anfällig für Zeitdruck zu sein als sein Gegner (und wenn sie die gegenteilige Überzeugung des Gegners kennen), dann können sie vernünftigerweise entscheiden, eine part-verkürzende Katastrophe nicht auszulösen.</p>
+    <p>Zusammenfassend ist es vernünftig, eine Katastrophe nicht auszulösen, wenn</p>
+    <ul class="inner">
+      <li>Du denkst, dass die Katastrophe „schlecht“ für dich ist, und</li>
+      <li>Du Grund zu der Annahme hast, dass dein Gegner irrtümlicherweise denkt, die Katastrophe sei stattdessen schlecht für ihn.</li>
+    </ul>
+    <p>Eine Katastrophe ist „schlecht“ für einen Spieler, wenn sie seine Gewinnchancen verringert. Die Überzeugung eines Spielers darüber, ob eine Katastrophe schlecht ist, hängt von seinen Bewertungs-Heuristiken der Stellung ab und von weniger greifbaren Faktoren wie seiner Fähigkeit, unter Zeitdruck zu rechnen (in Verbindung damit, wie die Katastrophe die Spiellänge beeinflussen dürfte).</p>
+
+    <h5>Gegner hat Gefühle</h5>
+    <p>Es <u>fühlt</u> sich schlecht an, wichtige Schiffe an eine Katastrophe zu verlieren (außer es bringt dich näher zum Sieg). Wenn eine Katastrophe also für beide Spieler Schiffe zerstört, möchte vielleicht keiner von euch sie auslösen, wegen des schlechten Gefühls, Schiffe zu verlieren. Betrachte also den Fall, wo es eine Übervölkerung gibt, die für dich und deinen Gegner viel Material zerstören würde. Selbst wenn du denkst, dass die Katastrophe die Stellung deines Gegners ein wenig verbessert, könntest du vernünftigerweise auf ihr Auslösen verzichten. Du solltest das nicht aus streng logischen Gründen tun, sondern in der Hoffnung, dass dein Gegner keine Lust hat, für einen kleinen Vorteil so viel Material zu verlieren.</p>
+
+    <h5>Unerfahrenheit der Gegner</h5>
+    <p>Schließlich könntest du erwägen, das Auslösen einer Katastrophe gegen einen sehr unerfahrenen Gegner zu unterlassen. Neue Spieler bemerken die Übervölkerung vielleicht nicht; sie wissen vielleicht nicht einmal, was eine Katastrophe ist. Du könntest also mit einer nicht ausgelösten Katastrophe aus Unwissenheit davonkommen, aber ich unterstütze es absolut nicht, Spieler auszunutzen, die nicht alle Regeln kennen. Du solltest es zu einem Lehrmoment machen, indem du darauf hinweist, was sie tun sollten. (Und übrigens: Wie hat es so ein unerfahrener Spieler geschafft, dich in eine unerwünschte Übervölkerung zu verwickeln?)</p>
+
+    <h5>Die Uhr des Gegners kann statt deiner laufen</h5>
+    <p>Mir fällt ein Grund ein, eine Katastrophe nicht auszulösen, der nichts mit dem Kopf deines Gegners zu tun hat. Es geht um die Zeitkontrolle.</p>
+    <p>Angenommen:</p>
+    <ul class="inner">
+      <li>Du spielst mit Zeitkontrolle.</li>
+      <li>Es liegt eine Übervölkerung auf dem Brett, die schlecht für dich ist.</li>
+      <li>Du bist sicher, dass es deinem Gegner, wenn du die Übervölkerung auf dem Brett lässt, <u>nicht</u> gelingen wird, einen zusätzlichen Vorteil zu erlangen, indem er die Katastrophe am Ende seines Zuges statt am Anfang auslöst.
+        <br>
+        Im Sinne des Diagramms bist du Alice, und Zustand B ist für dich nicht schlechter als Zustand A.</li>
+    </ul>
+    <p>Du möchtest die Übervölkerung vielleicht auf dem Brett lassen, damit dein Gegner die Katastrophe selbst auslösen muss, was ihn Zeit kostet. Wenn du mit physischen Steinen spielst, kann das physische Abräumen der Katastrophen-Stücke vom Brett und ihr Zurücksortieren in die Bank leicht 10 Sekunden oder mehr dauern. Wenn du auf einem digitalen System spielst, braucht es wahrscheinlich trotzdem etwas Zeit, dem Computer mitzuteilen, dass man die Katastrophe auslösen will. Wenn sonst alles gleich ist, ist es besser, wenn diese Zeit von der Uhr deines Gegners statt von deiner genommen wird. (Verbring nur nicht so viel Zeit mit Nachdenken darüber, dass du die Zeitersparnis wieder aufbrauchst.)</p>
+
+    <h4>&hellip;es sei denn, es gibt drei oder mehr Spieler</h4>
+    <p>Dieser ganze Abschnitt darüber, wann Katastrophen ausgelöst werden sollten, ist hinfällig, wenn ihr nicht Binäres Homeworlds spielt. Wenn drei oder mehr Spieler beteiligt sind, kannst du Diplomatie betreiben, was eine völlig andere Sache ist als das, was ich auf dieser Seite analysiere.</p>
+    <p>Für ein einfaches Beispiel, wann man in einem Drei-Spieler-Spiel keine Katastrophe auslösen sollte, nehmen wir an, Alice gewinnt gegen Bob und Carol. Bob und Carol haben beschlossen, eine Weile zu kooperieren, bis Alice keine Bedrohung mehr ist. Angenommen, Bob bewegt ein großes Schiff in eines von Carols Systemen, um gegen Alice zu helfen, aber Bobs Schiff hat dieselbe Farbe wie drei von Carols Schiffen. Bob kann entscheiden, die Katastrophe, die ihm und seinem Verbündeten schaden würde, nicht auszulösen. Stattdessen kann Bob seinen Zug mit der Übervölkerung auf dem Brett beenden und darauf vertrauen, dass Carol ein Schiff bewegt, tauscht oder opfert, um die Übervölkerung zu beseitigen. Alice würde diese Katastrophe natürlich auslösen, wenn die Übervölkerung noch auf dem Brett wäre, wenn sie an der Reihe ist.</p>
+
+    <h4>&hellip;und es sei denn, das Spiel ist vorbei</h4>
+    <p>Arthur O’Dwyer hat das folgende Beispiel ausgearbeitet.</p>
+    <figure>
+      <img src="https://cf.geekdo-images.com/camo/cc413ceb542c5ca15ee0ce9a96e51256d2fdce99/68747470733a2f2f692e696d6775722e636f6d2f475a4e355663732e706e67" alt="Beispiel: Lee spielt">
+    </figure>
+    <p>Lee ist am Zug. Der richtige Zug ist:</p>
+    <table class="move-table">
+      <tr><th>Lee</th><th>Ray</th></tr>
+      <tr><td>1.&#10;opfere b2 DS2&#10;handle r3 y3 Lee&#10;handle g3 r3 Ray&#10;Katastrophe Ray r</td><td></td></tr>
+    </table>
+    <p>Beachte, dass Lee es vermeiden muss, die gelbe Katastrophe in der eigenen Heimat auszulösen, denn diese Katastrophe würde den Sieg in ein Unentschieden verwandeln. Mein spieltheoriebasiertes Argument gilt in dieser Situation nicht, weil Ray keinen Zug bekommen wird, in dem er die Katastrophe auslösen könnte, die Lee ablehnt.</p>
+
+    <h3>Etikette</h3>
+    <p>Wenn du Homeworlds online spielst, interagierst du vielleicht überhaupt nicht mit deinem Gegner, außer durch das Spiel selbst. Computer übernehmen alle Timer und die Protokollführung. Aber wenn du mit physischen Steinen am selben Tisch spielst, gibt es mehr Raum für Fehler und Verstimmung. Sei ein guter Sportsmann mit guten Manieren.</p>
+    <p>Viele allgemeine Regeln der Spiel-Etikette gelten auch für Homeworlds: ruhig bleiben, nicht angeben, nicht meckern usw. In der englischsprachigen Welt scheint Schach das Spiel mit den am besten etablierten Etikette-Regeln zu sein, und das scheint ein guter Anfang zu sein. Homeworlds wird (noch) nicht viel in formellen Umgebungen gespielt, aber neben meinen Ideen unten könntest du ein Gefühl dafür bekommen, wie man seinem Gegner Respekt zeigt, aus <a href="https://www.il-chess.org/sportsmanship-and-etiquette">diesem schönen Artikel über Schachturnier-Etikette</a>. Aber anders als Schach haben manche Züge von Homeworlds mehrere komplexe Schritte, also gibt es noch mehr Raum für Missverständnisse. Hier ist mein Höflichkeits-Rat, der spezifisch für Homeworlds ist.</p>
+    <ul class="inner">
+      <li>Die Regeln von Homeworlds erlauben dir immer, deinen Zug neu zu starten, aber wenn du Steine oft hin- und herbewegst und deine Züge häufig neu startest, ist das nervig. (Selbst online können ständiges Rückgängigmachen ermüdend wirken.) Neustarten kann zu Fehlern führen, wenn die Steine zurück an ihre Ausgangspositionen gelegt werden. Versuche, deine Pläne zu visualisieren, bevor du sie auf dem Brett ausführst. Beginne nicht damit, Steine zu bewegen, wenn du den Zug, den du ausführst, nicht wirklich zu Ende bringen willst.</li>
+      <li>Wenn du <a href="https://jpeterbaker.github.io/homeworlds/site/glossary.html#star_towing">Sterne schleppst</a>, stelle sicher, dass dein Gegner versteht, was du tust, und bewege dann die Steine langsam und sorgfältig, vorzugsweise einzeln. Es ist leicht, dass kleine Schiffe in den falschen Systemen landen, wenn du Stapel von Steinen über die Spielfläche schiebst.</li>
+      <li>Mache keine Züge, während dein Gegner abgelenkt ist, besonders wenn du keine schriftliche Partieaufzeichnung oder Spieluhren hast.
+        <ul class="inner">
+          <li>Wenn du <u>doch</u> eine schriftliche Aufzeichnung hast, kannst du dir weniger Sorgen um ihre volle Aufmerksamkeit machen. Wenn sie etwas an der Partie nicht verstehen, können sie später prüfen, dass dein Zug regelkonform war.</li>
+          <li>Wenn du <u>ohne</u> Uhren spielst, sollte jede von deinem Gegner vergeudete Zeit von ihrer Zeitgutschrift kommen, sodass du dich frei fühlst, deinen Zug zu machen und ihre Uhr weiterlaufen zu lassen.</li>
+        </ul>
+        Im Idealfall hat selbst eine lockere Partie den Großteil ihrer Aufmerksamkeit, aber wenn sie kurz aufstehen oder wegblicken müssen, führe keinen komplexen Zug aus, der dazu führen könnte, dass sie verwirrt über das Geschehene sind (oder denken, du hättest betrogen).</li>
+      <li>Ich finde es höflich, seine Züge ein wenig zu kommentieren. Du musst nicht wortreich sein, aber du kannst verhindern, dass dein Gegner missversteht oder denkt, du betrügst. Wenn du zum Beispiel stillschweigend ein y3-Schiff in die Bank legst, weiß ich zunächst nicht einmal, ob du handelst oder opferst. Wenn du dann anfängst, neue Sterne aus der Bank zu ziehen und Schiffe herumzuschieben, kann ich ziemlich schnell den Überblick verlieren. Ein wenig Erzählung hilft dem anderen Spieler, deinen Zug zu verstehen und zu verifizieren, während er passiert.
+        <ul class="inner">
+          <li><u>Aber</u>: Wenn dein Gegner keine Erzählung mag, solltest du es natürlich nicht machen. Der ganze Sinn ist, ihm zu helfen.</li>
+          <li>In einer Partie ohne schriftliche Aufzeichnung finde ich, dass du das Recht hast, darauf zu bestehen, dass dein Gegner seine Züge erklärt, oder dass er seine Züge langsam genug ausführt, dass du verstehen kannst, was passiert. Bei Zeitkontrolle scheint es am fairsten, wenn die von dir erbetenen Erklärungen während deiner Zeit stattfinden, aber so etwas solltest du wahrscheinlich vorher entscheiden.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3 id="nonbinary">Mehr als zwei Spieler</h3>
+    <p>Wie ich es sehe, gibt es zwei Arten, Homeworlds mit mehr als zwei Spielern zu spielen. Ich nenne sie „nicht-binär“ und „super-binär“.</p>
+    <ul class="inner">
+      <li><b>Nicht-binär</b>: Das ist wahrscheinlich, woran du denkst, wenn du dir Homeworlds für mehr als zwei Spieler vorstellst. Jeder Spieler ist eine Zivilisation mit eigener Heimatwelt, und alle kämpfen im selben Raum.</li>
+      <li><b>Super-binär</b>: Das sind die Arten, mehr als zwei Personen einzubeziehen, während Binäres Homeworlds gespielt wird, entweder mit mehr als einem Spieler pro Zivilisation (in einer einzigen Partie) oder indem mehrere Partien gespielt werden.</li>
+    </ul>
+    <p>Andy Looney hat viele Gedanken zum Spielen mit mehr als zwei Personen gepostet <a href="https://new.wunderland.com/2022/10/11/non-binary-homeworlds/">hier</a>. Ich habe versucht, alle seine Ideen hier aufzunehmen.</p>
+
+    <h4>Nicht-binäres Homeworlds</h4>
+    <p>Wenn du mit mehr als zwei Spielern auf demselben Brett Abwechslung suchen willst, brauchst du die wenigen Zusatzregeln unten, nur damit alles sinnvoll und fair bleibt.</p>
+    <ul class="inner">
+      <li><b>Eliminierung</b>: Wenn ein Spieler die Kontrolle über seine Heimatwelt verliert, wird er aus dem Spiel eliminiert.
+        <ul class="inner">
+          <li>Der Spieler gilt als eliminiert, wenn der aktuelle Spieler seinen Zug <i>beendet</i>.</li>
+          <li>Eliminierte Spieler machen keine Züge mehr.</li>
+          <li>Die herrenlosen Schiffe eliminierter Spieler bleiben auf dem Brett. Sie gelten als Sternbesatzer und verhindern, dass Sterne vergessen werden, solange sie dort bleiben. Herrenlose Schiffe können erbeutet oder in Katastrophen verwickelt werden.</li>
+          <li>Wenn das Heimatsystem eines eliminierten Spielers noch existiert, zählt es nicht mehr als Heimatwelt.
+            <ul class="inner">
+              <li>Ab dem Moment der Eliminierung gilt: Wenn die ehemalige Heimatwelt keine Schiffe hat, werden die Sterne in die Bank zurückgegeben &ndash; genau wie bei jedem anderen Nicht-Heimatwelt-System.</li>
+              <li>Binäre Systeme können nie entdeckt werden, also kann eine aufgegebene binäre ehemalige Heimatwelt nicht wiederentdeckt werden.</li>
+              <li>Niemand darf das System als zweite Heimatwelt beanspruchen.</li>
+            </ul>
+          </li>
+          <li>Je nachdem, welche Siegbedingungen du verwenden willst, kann es wichtig sein, welche Aktion eines Spielers die Eliminierung erreicht hat.</li>
+        </ul>
+      </li>
+      <li><b>Anzahl der Stücke</b>: Die Gemeinschaft hat allgemein akzeptiert, dass die richtige Anzahl von Stücken in der Bank N+1 von jeder Gruppenfarbe ist, wobei N die Anzahl der Spieler ist.</li>
+      <li><b>Aufstellungsgleichheit</b>: Normalerweise wählen die Spieler ihre Heimatwelt-Aufstellung nacheinander der Reihe nach. Das kann aber erhebliche Ungleichheit erzeugen, wenn einige Spieler viel näher beieinander liegen als andere, etwa wenn ein Spieler beschließt, seine Heimatwelt mit der Heimat eines Spielers zu verbinden, der seine Sterne früher wählen musste. Du solltest vielleicht im Voraus entscheiden, welche Größen die Sterne jedes Spielers haben sollen, um ein Universum mit ausgeglichenen Verbindungen zu bekommen.</li>
+      <li><b>Diplomatie</b>: Manche Spieler mögen es nicht, wenn ihre Gegner einander Ratschläge geben, wie sie zu schlagen sind, also nimm dir einen Moment, bevor die Partie beginnt, um Hausregeln für Gespräche am Tisch zu vereinbaren. Dürfen Spieler einander zuflüstern, oder muss jeder jede Diskussion hören? Kann es verbindliche Abkommen geben, oder sollten gebrochene Deals eine ständige Drohung sein? Solltest du es einfach halten, indem du alle Gespräche verbietest?
+        <br>
+        Außerdem ist es in Homeworlds besonders leicht, anderen Spielern zu schaden, sowohl an Position als auch an Gefühlen. Wenn du nichts dagegen hast, dich hoffnungslos verwundbar zu lassen, wirst du viele Gelegenheiten haben, einen anderen Spieler lahmzulegen, und dabei möglicherweise jemand anderem einen leichten Sieg überlassen. Solche boshaften, selbstopfernden Schläge können wie persönliche Angriffe wirken. Wenn du denkst, dass einer deiner Gegner wahrscheinlich sagen wird „Ich werde nicht gewinnen, aber ich kann dafür sorgen, dass du auch nicht gewinnst“, und wenn dich das stören würde, dann ist Mehrspieler-Homeworlds vielleicht nicht das richtige Spiel für deine Gruppe. Es gibt viele nette Eurogames, die dieses Problem nicht haben :-)
+        <br>
+        Ich habe in <a href="#diplomacy">diesem Abschnitt</a> mehr über Diplomatie geschrieben.</li>
+    </ul>
+
+    <h4 id="nonbinary_victory">Siegbedingungen</h4>
+    <p>Im Binären Homeworlds endet die Partie, sobald mindestens ein Spieler die Kontrolle über seine Heimatwelt verliert. Bei mehr Spielern ist die Sache komplizierter, also musst du eine andere Art wählen zu entscheiden, wann die Partie vorbei ist und wer gewonnen hat.</p>
+    <ul class="inner">
+      <li><b>Letzter Kapitän steht</b>: Der letzte Spieler, der nicht eliminiert wurde, gewinnt.</li>
+      <li><b>Sinister</b>: Ein Spieler, der die Eliminierung des Spielers zu seiner Linken verursacht, gewinnt. Wenn ein Spieler einen Spieler eliminiert, der nicht zu seiner Linken sitzt, geht die Partie weiter, aber der eliminierte Spieler verlässt den Kreis. Der Spieler rechts vom eliminierten Spieler bekommt ein neues Ziel.</li>
+      <li><b>Gut gegen Böse</b>: Die Spieler werden zufällig und geheim als „gut“ oder „böse“ eingeteilt (die Hälfte der Spieler bekommt jede Ausrichtung, mit einem zusätzlichen „guten“ Spieler bei ungerader Spielerzahl). Jedes Mal, wenn ein Spieler eliminiert wird, werden die Ausrichtungen des eliminierten Spielers und des Eliminators aufgedeckt. Ein guter Spieler, der einen anderen guten Spieler eliminiert, wird ein böser Spieler. Wenn alle bösen Spieler eliminiert sind, teilen sich die verbleibenden guten Spieler den Sieg. Ein böser Spieler gewinnt allein, indem er irgendeinen anderen Spieler eliminiert.
+        <br>
+        Das ist eigentlich die ursprüngliche Siegbedingung. John Cooper fand, dass die versteckte Information nötig war, um das Spiel interessant zu machen.</li>
+      <li><b>Teams</b>:
+        <ol>
+          <li>Entscheidet, ob das Eliminieren eines Teams erfordert, nur einen Spieler oder das ganze Team zu eliminieren. Andy schlägt vor, dass die Eliminierung eines einzelnen Mitglieds ausreicht.</li>
+          <li>Teilt euch in kooperative Teams gleicher Größe auf.</li>
+          <li>Setzt die Spieler in gleichmäßigen Abständen mit ihren Teammitgliedern, z.&nbsp;B. A-B-C-A-B-C.</li>
+          <li>Entscheidet euch für eine der obigen Siegbedingungen mit Teams an Stelle einzelner Spieler.
+            <ul class="inner">
+              <li>Wenn es nur zwei Teams gibt, spielt ihr offensichtlich einfach, bis ein Team eliminiert ist.</li>
+              <li>Bei sinister-Teams sitzt ein Team „links“ von einem anderen Team, wenn seine Mitglieder direkt links von den Mitgliedern dieses Teams sitzen.</li>
+            </ul>
+          </li>
+          <li>Spielt euer episches Team-Match!</li>
+        </ol>
+      </li>
+    </ul>
+    <p>Die Regeln von „Sinister“ und „Gut gegen Böse“ betonen die Beziehung zwischen einem eliminierten Spieler und seinem Eliminator. Es ist etwas unklar, was zu tun ist, wenn ein schlechter Verlierer kurz davor, von jemandem eliminiert zu werden, zurücktritt oder sich selbst eliminiert. Mein Rat ist, mit so einer Person nicht zu spielen.</p>
+
+    <h4 id="diplomacy">Diplomatie</h4>
+    <p>Ich scheine in Spielen nicht gut in Diplomatie zu sein. Ich gebe dem Umstand die Schuld, dass ich ein nerviger Besserwisser bin, den Leute gern verlieren sehen ;-)</p>
+    <p>Einer der größten Unterschiede zwischen Binärem und Nicht-Binärem Homeworlds ist, dass es bei drei oder mehr Spielern sinnvoll ist zu verhandeln. Wenn zwei Personen (oder Teams) exakt gegensätzliche Ziele haben, kann es zwischen ihnen keine Verhandlung oder Zusammenarbeit geben, denn jeder Spieler hat nur in dem Maße Erfolg, wie der andere scheitert. Jedes Ergebnis, das ein Spieler will, muss der andere vermeiden. Es gibt keine Win-win-Züge. Sie spielen ein „Nullsummen-Spiel“.</p>
+    <p>Wenn drei oder mehr Spieler jeweils ihr eigenes Ziel haben, können sie Diplomatie einsetzen, um ihre Interessen voranzutreiben. Wenn ein Spieler gewinnt, können die anderen Spieler ihre Gewinnchancen verbessern, indem sie sich gegen den Spitzenreiter verbünden. Partien für 3+ Spieler werden oft von einem Manipulator gewonnen, der die anderen Spieler kontrollieren kann, selbst wenn der Manipulator beim eigentlichen Spiel weniger begabt ist.</p>
+    <p>Etwas, das viele Spieler (mich eingeschlossen) an Nullsummen-Spielen mit vollständiger Information lieben, ist, strikt durch ihren Verstand zu gewinnen, ohne sich um Charisma sorgen zu müssen. Verglichen mit Spielen mit Diplomatie fühlen sich Nullsummen-Spiele rein und kontrolliert an.</p>
+    <p>Andererseits sind Spiele mit Diplomatie viel sozialer. Sie eignen sich großartig, um mehr Leute in ein gemeinsames Spiel zu bringen und einander kennenzulernen. Die Unberechenbarkeit der anderen Spieler erzeugt ein wildes Erlebnis, das großartig für diejenigen ist, die die Fahrt einfach genießen wollen, ohne sich darauf zu versteifen, ob die „richtige“ Person gewonnen hat.</p>
+
+    <h4>Super-binäres Homeworlds</h4>
+    <p>Du kannst die gewöhnlichen Regeln des Binären Homeworlds verwenden, um mit mehr als zwei Personen zu spielen.</p>
+    <ul class="inner">
+      <li><b>Ein Turnier veranstalten</b>: Lasst die Spieler auf irgendeine organisierte Art mehrere Zwei-Spieler-Partien spielen (K.O.-Bracket, Rundenturnier, Schweizer System usw.).</li>
+      <li><b>Rundum-Krieg</b>: Setzt euch in einen Kreis, und jeder spielt zwei Partien, eine mit dem Spieler auf jeder Seite. Bei drei Spielern nennt Andy das den Interstellaren Dreierkampf.</li>
+      <li><b>Komitees</b>:
+        Teilt euch in zwei Teams.
+        Spielt Binäres Homeworlds, wobei jedes Team als ein Spieler agiert.
+        Ihr wollt vielleicht damit beginnen, Kapitäne zu wählen,
+        die bei ihren Teamzügen das letzte Wort haben.
+        <br>
+        Wenn ein Mitglied eurer Gruppe viel begabter ist als die anderen,
+        erwäge, es zum einzigen Mitglied seines Komitees zu machen.
+        Andy verwendet den Begriff „Hive Mind“ (Schwarmgedächtnis) für ein Team,
+        das gegen einen Einzelspieler antritt.</li>
+      <li><b>Double-cross-Stil</b>:
+        Das ist ein Spiel für genau vier Spieler.
+        Beginnt, indem ihr euch zu Zweierteams zusammentut.
+        In jedem Team sind die zwei Spieler ein Kapitän und ein Erster Offizier.
+        Die Aufgabe eines Ersten Offiziers ist es, in jedem Zug einen Vorschlag zu machen.
+        Die Aufgabe eines Kapitäns ist es, die Züge seines Teams zu machen,
+        nachdem er den Vorschlag seines Ersten Offiziers gehört hat.
+        Allerdings sind die Kapitäne ab dem dritten Zug <i>verpflichtet</i>,
+        etwas <i>anderes</i> zu tun als das, was ihr Erster Offizier vorgeschlagen hat.
+        Jeder Erste Offizier versucht tatsächlich, seinen eigenen Kapitän verlieren zu lassen,
+        indem er die beste Wahl seines Kapitäns vorschlägt (und verhindert).
+        Die Gewinner sind der Kapitän des Teams, dessen Heimatwelt überlebt,
+        und der Erste Offizier, dessen Heimatwelt zerstört wird.
+        <br>
+        Aus meiner eigenen Erfahrung mit diesem Format schlage ich ein paar Dinge vor.
+        <ul class="inner">
+          <li><b>Schiffe sind einzigartig</b>.
+            Wenn der Erste Offizier sagt: „Wir sollten dieses y1 von System A nach System B bewegen“,
+            dann darf der Kapitän ein <i>anderes</i> y1 von A nach B bewegen (falls es eines gibt).</li>
+          <li><b>Bank-Stücke sind nicht einzigartig</b>.
+            Wenn der Erste Offizier sagt: „Wir sollten dieses g1 in System A bauen“,
+            dann darf ihr Kapitän <i>nicht</i> ein „anderes“ g1 wählen und in System A bauen.</li>
+          <li><b>Die Reihenfolge der Opfer-Aktionen spielt keine Rolle</b>.
+            Wenn ein Erster Offizier einen Opfer-Zug mit mehreren Aktionen vorschlägt,
+            kann ihr Kapitän den Vorschlag nicht annehmen, während er nur die Reihenfolge der Aktionen ändert.
+            Wenn er dazu führt, dass dieselben Schiffe an denselben Orten landen,
+            gilt es als derselbe Zug.</li>
+        </ul>
+        Etwas formaler schlage ich vor, (zumindest im Kopf)
+        jedem Schiff einen Namen oder ein Etikett zu geben
+        (aber keine Etiketten für Stücke, die zu Beginn des Zuges in der Bank sind).
+        Stell dir den Vorschlag des Ersten Offiziers als einen Endspielzustand vor (einschließlich der Etiketten)
+        statt als eine Folge von Aktionen.
+        Dem Kapitän ist es verboten, seinen Zug mit dem vorgeschlagenen Spielfeldzustand zu beenden
+        (selbst wenn er es auf andere Weise tut als vom Ersten Offizier angegeben).
+        Der Kapitän <i>darf</i> seinen Zug mit jedem Zustand beenden,
+        der anders aussieht als der vorgeschlagene Zustand
+        oder der gleich aussieht, aber an anderen Stellen Schiff-Etiketten hat.</li>
+    </ul>
+  </section>
+
+  <div class="bottom-nav">
+    <span class="lbl">Zurück</span>
+    <a href="index.html">Homeworlds: Kurzreferenz (Regeln)</a>
+  </div>
+
+  <footer>
+    Nach <a href="https://jpeterbaker.github.io/homeworlds/site/guide/getting_started.html">Babamots’ Homeworlds Strategy Guide</a> &ndash; deutsche Übersetzung.
+  </footer>
+
+</div>
+<script>
+  (function () {
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      var label = document.querySelector(".theme-toggle .label");
+      if (label) {
+        label.textContent = theme === "light" ? "Dunkles Design" : "Helles Design";
+      }
+    }
+    var saved = null;
+    try { saved = localStorage.getItem("hw-theme"); } catch (e) {}
+    var theme = saved === "light" || saved === "dark"
+      ? saved
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    applyTheme(theme);
+    window.toggleTheme = function () {
+      var current = document.documentElement.getAttribute("data-theme");
+      var next = current === "light" ? "dark" : "light";
+      applyTheme(next);
+      try { localStorage.setItem("hw-theme", next); } catch (e) {}
+    };
+  })();
+</script>
+</body>
+</html>
