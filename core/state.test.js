@@ -11,6 +11,7 @@ import {
   bankLayout,
   applyMessage,
   buildCameraMessage,
+  buildPieceMessage,
   clampZoom,
 } from './state.js';
 
@@ -130,4 +131,64 @@ test('camera ties are broken by peer id', () => {
   const tie = { type: 'camera', id: 't', by: 'b', camera: { x: 2, y: 2, zoom: 1, version: 5 } };
   const next = applyMessage(mine, tie);
   assert.equal(next.camera.x, 2, 'higher peer id wins the tie');
+});
+
+test('a move updates the piece position', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('red', 3, 1);
+  const message = buildPieceMessage(doc, id, { x: 400, y: 500 }, 'a');
+  const next = applyMessage(doc, message);
+  assert.equal(next.pieces[id].x, 400);
+  assert.equal(next.pieces[id].y, 500);
+});
+
+test('a move is clamped inside the world bounds', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('red', 3, 1);
+  const far = applyMessage(doc, buildPieceMessage(doc, id, { x: 99999, y: -99999 }, 'a'));
+  assert.ok(far.pieces[id].x < WORLD.width, 'x clamped in');
+  assert.ok(far.pieces[id].x > WORLD.width - 100, 'x clamped near the edge');
+  assert.ok(far.pieces[id].y > 0 && far.pieces[id].y < 100, 'y clamped near the edge');
+});
+
+test('a newer move wins and an older one is ignored', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('yellow', 1, 1);
+  const first = applyMessage(doc, buildPieceMessage(doc, id, { x: 100, y: 100 }, 'a'));
+  const second = applyMessage(first, buildPieceMessage(first, id, { x: 200, y: 200 }, 'a'));
+  assert.equal(second.pieces[id].x, 200);
+  // Replaying the first (older) message must not move it back.
+  const stale = { ...buildPieceMessage(doc, id, { x: 100, y: 100 }, 'a'), piece: { ...first.pieces[id] } };
+  const replayed = applyMessage(second, stale);
+  assert.equal(replayed.pieces[id].x, 200);
+});
+
+test('a move with an unknown piece id is ignored', () => {
+  const doc = createDocument('g1');
+  const message = {
+    type: 'piece',
+    id: 'm',
+    by: 'a',
+    piece: { id: 'purple-huge-9', color: 'purple', size: 9, kind: 'ship', x: 10, y: 10, rotation: 0, version: 1 },
+  };
+  assert.equal(applyMessage(doc, message), doc);
+});
+
+test('a move with non-finite coordinates is ignored', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('blue', 2, 1);
+  const message = buildPieceMessage(doc, id, { x: 10, y: 10 }, 'a');
+  message.piece.x = Number.NaN;
+  assert.equal(applyMessage(doc, message), doc);
+});
+
+test('a move cannot change a piece colour or size', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('green', 2, 1);
+  const message = buildPieceMessage(doc, id, { x: 10, y: 10 }, 'a');
+  message.piece.color = 'red';
+  message.piece.size = 3;
+  const next = applyMessage(doc, message);
+  assert.equal(next.pieces[id].color, 'green');
+  assert.equal(next.pieces[id].size, 2);
 });

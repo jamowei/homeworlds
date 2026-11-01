@@ -125,6 +125,11 @@
   cursor: grab;
 }
 
+.piece.dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
 .piece-shape {
   stroke: rgba(15, 20, 32, 0.55);
   stroke-width: 2;

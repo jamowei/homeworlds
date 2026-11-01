@@ -4,7 +4,7 @@
 // zoom, pinch, +/− buttons). Later tickets extend this file with piece input,
 // transports, storage and presence.
 
-import { createDocument, applyMessage, buildCameraMessage } from './core/state.js';
+import { createDocument, applyMessage, buildCameraMessage, buildPieceMessage } from './core/state.js';
 import { createRenderer } from './render/svg.js';
 
 const PEER_ID = 'local';
@@ -16,6 +16,14 @@ const renderer = createRenderer(svg, { onOperation: handleOperation });
 
 function handleOperation(op) {
   switch (op.type) {
+    case 'move': {
+      const message = buildPieceMessage(doc, op.id, { x: op.x, y: op.y }, PEER_ID);
+      if (message) {
+        doc = applyMessage(doc, message);
+        renderer.render(doc);
+      }
+      break;
+    }
     case 'camera': {
       const message = buildCameraMessage(doc, op.camera, PEER_ID);
       doc = applyMessage(doc, message);
