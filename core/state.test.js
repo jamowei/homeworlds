@@ -192,3 +192,40 @@ test('a move cannot change a piece colour or size', () => {
   assert.equal(next.pieces[id].color, 'green');
   assert.equal(next.pieces[id].size, 2);
 });
+
+test('rotating a triangle toggles 0 and 180 and keeps position/colour/size', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('red', 3, 2);
+  const before = doc.pieces[id];
+  const rotated = applyMessage(doc, buildPieceMessage(doc, id, { rotation: 180 }, 'a'));
+  assert.equal(rotated.pieces[id].rotation, 180);
+  assert.equal(rotated.pieces[id].x, before.x);
+  assert.equal(rotated.pieces[id].y, before.y);
+  assert.equal(rotated.pieces[id].color, 'red');
+  assert.equal(rotated.pieces[id].size, 3);
+  assert.equal(rotated.pieces[id].kind, 'ship');
+});
+
+test('a flip turns a ship into a star in place, preserving colour and size', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('blue', 1, 3);
+  const before = doc.pieces[id];
+  const flipped = applyMessage(doc, buildPieceMessage(doc, id, { kind: 'star' }, 'a'));
+  assert.equal(flipped.pieces[id].kind, 'star');
+  assert.equal(flipped.pieces[id].x, before.x);
+  assert.equal(flipped.pieces[id].y, before.y);
+  assert.equal(flipped.pieces[id].color, 'blue');
+  assert.equal(flipped.pieces[id].size, 1);
+});
+
+test('a flipped-back triangle remembers its previous orientation', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('green', 2, 1);
+  let next = applyMessage(doc, buildPieceMessage(doc, id, { rotation: 180 }, 'a'));
+  next = applyMessage(next, buildPieceMessage(next, id, { kind: 'star' }, 'a'));
+  assert.equal(next.pieces[id].kind, 'star');
+  assert.equal(next.pieces[id].rotation, 180, 'the angle survives the flip');
+  next = applyMessage(next, buildPieceMessage(next, id, { kind: 'ship' }, 'a'));
+  assert.equal(next.pieces[id].kind, 'ship');
+  assert.equal(next.pieces[id].rotation, 180, 'and is restored on the flip back');
+});

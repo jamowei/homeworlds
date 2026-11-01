@@ -198,7 +198,17 @@ export function createRenderer(svg, options = {}) {
   let pan = null;
   let drag = null;
   let pinch = null;
+  let lastTouchTap = null;
   const activePointers = new Map();
+
+  const TAP_MOVE_LIMIT = 8; // px before a press counts as a drag, not a tap
+  const DOUBLE_TAP_MS = 320;
+  const LONG_PRESS_MS = 500;
+
+  function pieceFromEvent(event) {
+    const node = event.target.closest && event.target.closest('.piece');
+    return node && node.dataset.id ? node.dataset.id : null;
+  }
 
   function emitMove(id, event, final) {
     const world = toWorld(event.clientX, event.clientY);
@@ -212,13 +222,31 @@ export function createRenderer(svg, options = {}) {
     drag = {
       id,
       pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
       offsetX: piece.x - world.x,
       offsetY: piece.y - world.y,
+      longPressTimer: null,
     };
     draggingId = id;
     svg.setPointerCapture?.(event.pointerId);
     render(board);
     emit({ type: 'drag', id, phase: 'start' });
+
+    // Touch: holding still flips the piece after a moment.
+    if (event.pointerType === 'touch') {
+      drag.longPressTimer = setTimeout(() => {
+        if (drag && drag.id === id && !drag.moved) {
+          emit({ type: 'flip', id });
+          if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
+          drag = null;
+          draggingId = null;
+          render(board);
+        }
+      }, LONG_PRESS_MS);
+    }
   }
 
   svg.addEventListener('pointerdown', (event) => {
@@ -234,15 +262,16 @@ export function createRenderer(svg, options = {}) {
       };
       pan = null;
       if (drag) {
+        if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
         draggingId = null;
         drag = null;
       }
       return;
     }
 
-    const node = event.target.closest && event.target.closest('.piece');
-    if (node && node.dataset.id) {
-      startDrag(node.dataset.id, event);
+    const id = pieceFromEvent(event);
+    if (id) {
+      startDrag(id, event);
       return;
     }
     pan = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: { ...currentCamera() } };
@@ -269,7 +298,11 @@ export function createRenderer(svg, options = {}) {
     }
 
     if (drag && event.pointerId === drag.pointerId) {
-      emitMove(drag.id, event, false);
+      if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > TAP_MOVE_LIMIT) {
+        drag.moved = true;
+        if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
+      }
+      if (drag.moved) emitMove(drag.id, event, false);
       return;
     }
 
@@ -284,7 +317,19 @@ export function createRenderer(svg, options = {}) {
     activePointers.delete(event.pointerId);
     if (activePointers.size < 2) pinch = null;
     if (drag && event.pointerId === drag.pointerId) {
-      emitMove(drag.id, event, true);
+      if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
+      if (drag.moved) {
+        emitMove(drag.id, event, true);
+      } else if (drag.pointerType === 'touch') {
+        // A still tap: a second one shortly after rotates the piece.
+        const now = Date.now();
+        if (lastTouchTap && lastTouchTap.id === drag.id && now - lastTouchTap.time < DOUBLE_TAP_MS) {
+          emit({ type: 'rotate', id: drag.id });
+          lastTouchTap = null;
+        } else {
+          lastTouchTap = { id: drag.id, time: now };
+        }
+      }
       emit({ type: 'drag', id: drag.id, phase: 'end' });
       drag = null;
       draggingId = null;
@@ -297,6 +342,23 @@ export function createRenderer(svg, options = {}) {
   }
   svg.addEventListener('pointerup', endPointer);
   svg.addEventListener('pointercancel', endPointer);
+
+  // Right-click a triangle toggles its orientation; squares ignore it.
+  svg.addEventListener('contextmenu', (event) => {
+    const id = pieceFromEvent(event);
+    if (!id) return;
+    event.preventDefault();
+    const piece = board?.pieces?.[id];
+    if (piece && piece.kind === 'ship') emit({ type: 'rotate', id });
+  });
+
+  // Double-click flips a triangle into a square and back.
+  svg.addEventListener('dblclick', (event) => {
+    const id = pieceFromEvent(event);
+    if (!id) return;
+    event.preventDefault();
+    emit({ type: 'flip', id });
+  });
 
   svg.addEventListener(
     'wheel',

@@ -24,6 +24,28 @@ function handleOperation(op) {
       }
       break;
     }
+    case 'rotate': {
+      const piece = doc.pieces[op.id];
+      if (!piece || piece.kind !== 'ship') break;
+      const rotation = piece.rotation === 0 ? 180 : 0;
+      const message = buildPieceMessage(doc, op.id, { rotation }, PEER_ID);
+      if (message) {
+        doc = applyMessage(doc, message);
+        renderer.render(doc);
+      }
+      break;
+    }
+    case 'flip': {
+      const piece = doc.pieces[op.id];
+      if (!piece) break;
+      const kind = piece.kind === 'ship' ? 'star' : 'ship';
+      const message = buildPieceMessage(doc, op.id, { kind }, PEER_ID);
+      if (message) {
+        doc = applyMessage(doc, message);
+        renderer.render(doc);
+      }
+      break;
+    }
     case 'camera': {
       const message = buildCameraMessage(doc, op.camera, PEER_ID);
       doc = applyMessage(doc, message);
