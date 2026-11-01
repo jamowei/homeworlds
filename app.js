@@ -19,6 +19,7 @@ import { createBroadcastTransport } from './transport/broadcast.js';
 import { createPeerRegistry } from './transport/peers.js';
 import { createWebRtcTransport, isWebRtcSupported } from './transport/webrtc.js';
 import { encodeFragment, decodeFragment, encodePaste, decodePaste } from './signalling/codec.js';
+import { exportDocument, importDocument } from './core/io.js';
 
 const SAVE_DEBOUNCE_MS = 300;
 const NAME_KEY = 'hw-name';
@@ -308,6 +309,55 @@ async function joinFromText(text) {
   await joinAsGuest(blob);
 }
 
+// --- JSON export / import fallback (ticket 13) --------------------------
+//
+// The escape hatch when WebRTC is impossible: a pure JSON blob hand-copied
+// through any chat. It never requires a peer connection. Kept in its own
+// section so sibling tickets can merge without touching it.
+
+function exportBoard() {
+  const json = exportDocument(doc);
+  const out = $('export-output');
+  if (out) out.value = json;
+  const copy = navigator.clipboard?.writeText?.(json);
+  if (copy) {
+    copy.catch(() => out?.select());
+  } else {
+    out?.select();
+  }
+  showError('import-error', '');
+}
+
+function downloadBoard() {
+  const out = $('export-output');
+  const json = out?.value || exportDocument(doc);
+  if (out && !out.value) out.value = json;
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `homeworlds-${gameId}.json`;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function importBoard() {
+  const raw = $('import-input')?.value || '';
+  const restored = importDocument(raw, { fallbackGameId: gameId });
+  if (!restored) {
+    showError('import-error', 'Ungültiges Board-JSON. Bitte den Code vollständig einfügen.');
+    return;
+  }
+  showError('import-error', '');
+  // Adopt the imported identity so a re-export keeps matching the opponent.
+  if (restored.gameId && restored.gameId !== gameId) {
+    gameId = restored.gameId;
+    store.rememberGameId(gameId);
+    useBroadcast(gameId);
+  }
+  setDocument(restored);
+}
+
 // --- Local operations ---------------------------------------------------
 
 function handleOperation(op) {
@@ -359,6 +409,11 @@ $('accept-reply')?.addEventListener('click', () => acceptReplyText($('reply-inpu
 $('gate-skip')?.addEventListener('click', () => showGate(false));
 $('handshake-close')?.addEventListener('click', () => hideHandshake());
 
+// ticket 13: JSON export/import fallback
+$('export-board')?.addEventListener('click', () => exportBoard());
+$('download-board')?.addEventListener('click', () => downloadBoard());
+$('import-board')?.addEventListener('click', () => importBoard());
+
 $('copy-link')?.addEventListener('click', async () => {
   const value = $('handshake-link')?.value || '';
   try {
@@ -374,6 +429,21 @@ $('copy-link')?.addEventListener('click', async () => {
     $('handshake-link')?.select();
   }
 });
+
+// --- Fallback warnings (ticket 13) --------------------------------------
+
+// Opening the page straight from disk means no secure context: WebRTC needs
+// HTTPS, but same-browser tab sync (BroadcastChannel) and JSON exchange work.
+if (location.protocol === 'file:') {
+  const warn = $('file-warning');
+  if (warn) warn.hidden = false;
+}
+
+// A browser without WebRTC can still use the board, the tab sync and JSON.
+if (!isWebRtcSupported()) {
+  const notice = $('gate-webrtc');
+  if (notice) notice.hidden = false;
+}
 
 // Opening an invite link shows the board immediately and produces a reply.
 if (location.hash && location.hash.includes('hw=')) {

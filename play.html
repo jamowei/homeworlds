@@ -14,6 +14,12 @@
   <div class="gate-card">
     <h2>Gemeinsam spielen</h2>
     <p class="gate-help">Dein Name ist Pflicht, damit Spiele nie anonym sind.</p>
+    <!-- ticket 13: WebRTC-unsupported notice -->
+    <p class="gate-notice" id="gate-webrtc" hidden>
+      Dieser Browser kann kein WebRTC. „Neues Spiel erstellen“ und „Beitreten“ sind
+      deshalb nicht möglich. Nutze den JSON-Export/-Import unten oder einen zweiten
+      Tab im selben Browser.
+    </p>
     <label class="field">Dein Name
       <input id="player-name" type="text" value="Gast" maxlength="24" autocomplete="nickname">
     </label>
@@ -31,6 +37,13 @@
     <h1>Gemeinsamer Tisch</h1>
     <p class="hint">Freies Tabletop ohne Regelprüfung – die Regeln kennt ihr.</p>
   </header>
+
+  <!-- ticket 13: file:// / HTTPS warning -->
+  <p class="warning" id="file-warning" hidden>
+    Peer-Sync (WebRTC) funktioniert nur über HTTPS. Diese Seite wurde über
+    <code>file://</code> geöffnet. Ein zweiter Tab im selben Browser synchronisiert
+    trotzdem, und der JSON-Export/-Import unten funktioniert auch.
+  </p>
 
   <div class="play-toolbar" id="toolbar">
     <span class="status" id="status" data-state="offline">Nicht verbunden</span>
@@ -59,6 +72,24 @@
     </div>
     <p class="handshake-error" id="handshake-error" hidden></p>
   </div>
+
+  <!-- ticket 13: JSON export/import fallback (no peer connection required) -->
+  <section class="fallback" id="fallback">
+    <h2>Board als JSON austauschen</h2>
+    <p class="note">
+      Ohne Peer-Verbindung: exportiere dein Board und schicke den JSON-Text per Chat.
+      Dein Gegenüber fügt ihn unten ein.
+    </p>
+    <div class="fallback-row">
+      <button type="button" class="btn" id="export-board">Exportieren</button>
+      <button type="button" class="btn" id="download-board">Herunterladen</button>
+    </div>
+    <textarea id="export-output" rows="3" readonly placeholder="Hier erscheint dein Board als JSON."></textarea>
+    <p class="note">Board des Gegenübers einfügen und laden:</p>
+    <textarea id="import-input" rows="3" placeholder="Board-JSON einfügen"></textarea>
+    <button type="button" class="btn primary" id="import-board">Importieren</button>
+    <p class="fallback-error" id="import-error" hidden></p>
+  </section>
 
   <div class="board-frame">
     <svg id="board" class="board" role="img" aria-label="Homeworlds-Spielbrett"></svg>
