@@ -195,7 +195,11 @@ function maxPieceVersion(doc) {
 }
 
 function nextVersion(doc) {
-  return Math.max(maxPieceVersion(doc), Number(doc.resetVersion) || 0) + 1;
+  return Math.max(
+    maxPieceVersion(doc),
+    Number(doc.resetVersion) || 0,
+    Number(doc.camera?.version) || 0,
+  ) + 1;
 }
 
 // Build a local piece mutation. The caller applies the returned message with

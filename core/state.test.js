@@ -9,6 +9,9 @@ import {
   createDocument,
   pieceId,
   bankLayout,
+  applyMessage,
+  buildCameraMessage,
+  clampZoom,
 } from './state.js';
 
 test('createDocument yields exactly 36 pieces', () => {
@@ -87,4 +90,44 @@ test('the document carries a game id and a camera', () => {
   assert.equal(doc.gameId, 'game-42');
   assert.ok(doc.camera);
   assert.equal(doc.camera.zoom, 1);
+});
+
+test('zoom is clamped to roughly 25%–400%', () => {
+  assert.equal(clampZoom(0.01), 0.25);
+  assert.equal(clampZoom(100), 4);
+  assert.equal(clampZoom(1.5), 1.5);
+});
+
+test('applying a camera message clamps its zoom', () => {
+  const doc = createDocument('g1');
+  const message = buildCameraMessage(doc, { x: 100, y: 200, zoom: 99 }, 'a');
+  const next = applyMessage(doc, message);
+  assert.equal(next.camera.zoom, 4);
+  assert.equal(next.camera.x, 100);
+  assert.equal(next.camera.y, 200);
+});
+
+test('camera is last-write-wins: a newer version wins', () => {
+  const doc = createDocument('g1');
+  const first = applyMessage(doc, buildCameraMessage(doc, { x: 10, y: 10, zoom: 2 }, 'a'));
+  const second = applyMessage(first, buildCameraMessage(first, { x: 50, y: 50, zoom: 1 }, 'a'));
+  assert.equal(second.camera.x, 50);
+  assert.equal(second.camera.zoom, 1);
+});
+
+test('camera ignores a stale (older) update', () => {
+  const doc = createDocument('g1');
+  const first = applyMessage(doc, buildCameraMessage(doc, { x: 10, y: 10, zoom: 2 }, 'a'));
+  const stale = { type: 'camera', id: 'x', by: 'b', camera: { x: 999, y: 999, zoom: 3, version: 0 } };
+  const next = applyMessage(first, stale);
+  assert.equal(next.camera.x, 10);
+  assert.equal(next.camera.zoom, 2);
+});
+
+test('camera ties are broken by peer id', () => {
+  const doc = createDocument('g1');
+  const mine = { ...doc, camera: { x: 1, y: 1, zoom: 1, version: 5, by: 'a' } };
+  const tie = { type: 'camera', id: 't', by: 'b', camera: { x: 2, y: 2, zoom: 1, version: 5 } };
+  const next = applyMessage(mine, tie);
+  assert.equal(next.camera.x, 2, 'higher peer id wins the tie');
 });

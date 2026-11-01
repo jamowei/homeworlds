@@ -65,6 +65,23 @@
 .status[data-state="waiting"] { color: var(--yellow); border-color: var(--yellow); }
 .status[data-state="offline"] { color: var(--muted); }
 
+.play-toolbar .spacer { flex: 1; }
+
+.btn {
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--blue); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn.danger:hover { border-color: var(--red); }
+
 .board-frame {
   position: relative;
   flex: 1;
