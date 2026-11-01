@@ -6,15 +6,20 @@ import {
   SIZES,
   WORLD,
   BANK,
+  MIN_ZOOM,
+  MAX_ZOOM,
   createDocument,
   pieceId,
   bankLayout,
   applyMessage,
   buildCameraMessage,
   buildPieceMessage,
+  buildFlipMessage,
   buildResetMessage,
+  buildRotateMessage,
   clampZoom,
   mergeDocuments,
+  normalisePiece,
   resetDocument,
 } from './state.js';
 
@@ -100,6 +105,17 @@ test('zoom is clamped to roughly 25%–400%', () => {
   assert.equal(clampZoom(0.01), 0.25);
   assert.equal(clampZoom(100), 4);
   assert.equal(clampZoom(1.5), 1.5);
+});
+
+test('clampZoom uses the exported zoom bounds', () => {
+  assert.equal(MIN_ZOOM, 0.25);
+  assert.equal(MAX_ZOOM, 4);
+  assert.equal(clampZoom(MIN_ZOOM / 100), MIN_ZOOM);
+  assert.equal(clampZoom(MAX_ZOOM * 100), MAX_ZOOM);
+});
+
+test('BANK exposes the copy offsets shared with the renderer', () => {
+  assert.deepEqual([...BANK.copyOffsets], [-54, 0, 54]);
 });
 
 test('applying a camera message clamps its zoom', () => {
@@ -233,6 +249,74 @@ test('a flipped-back triangle remembers its previous orientation', () => {
   assert.equal(next.pieces[id].rotation, 180, 'and is restored on the flip back');
 });
 
+test('buildRotateMessage toggles a ship 0<->180 in place', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('red', 3, 2);
+  const rotated = applyMessage(doc, buildRotateMessage(doc, id, 'a'));
+  assert.equal(rotated.pieces[id].rotation, 180);
+  const back = applyMessage(rotated, buildRotateMessage(rotated, id, 'a'));
+  assert.equal(back.pieces[id].rotation, 0);
+  // position, colour, size and shape are untouched
+  assert.equal(back.pieces[id].x, doc.pieces[id].x);
+  assert.equal(back.pieces[id].color, 'red');
+  assert.equal(back.pieces[id].size, 3);
+  assert.equal(back.pieces[id].kind, 'ship');
+});
+
+test('buildRotateMessage refuses a square and an unknown piece', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('blue', 2, 1);
+  const starDoc = applyMessage(doc, buildFlipMessage(doc, id, 'a'));
+  assert.equal(starDoc.pieces[id].kind, 'star');
+  assert.equal(buildRotateMessage(starDoc, id, 'a'), null, 'rotating a square does nothing');
+  assert.equal(buildRotateMessage(doc, 'not-a-piece', 'a'), null);
+});
+
+test('buildFlipMessage toggles ship<->star in place, preserving identity', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('green', 1, 2);
+  const flipped = applyMessage(doc, buildFlipMessage(doc, id, 'a'));
+  assert.equal(flipped.pieces[id].kind, 'star');
+  assert.equal(flipped.pieces[id].x, doc.pieces[id].x);
+  assert.equal(flipped.pieces[id].color, 'green');
+  assert.equal(flipped.pieces[id].size, 1);
+  const back = applyMessage(flipped, buildFlipMessage(flipped, id, 'a'));
+  assert.equal(back.pieces[id].kind, 'ship');
+  assert.equal(buildFlipMessage(doc, 'not-a-piece', 'a'), null);
+});
+
+// --- normalisePiece (shared by the sync reducer and JSON import) --------
+
+test('normalisePiece rejects an unknown id or mismatched identity', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('red', 1, 1);
+  const piece = { ...doc.pieces[id], x: 5, y: 5, version: 3 };
+  assert.equal(normalisePiece(piece, doc.pieces[id]).id, id);
+  // unknown id: `isValidPiece` refuses it
+  assert.equal(normalisePiece({ ...piece, id: 'purple-huge-9' }, doc.pieces[id]), null);
+  // same colour/size but a different copy must not pass as its identity
+  assert.equal(normalisePiece({ ...piece, id: pieceId('red', 1, 2) }, doc.pieces[id]), null);
+  // mutable identity is refused
+  assert.equal(normalisePiece({ ...piece, color: 'blue' }, doc.pieces[id]), null);
+  assert.equal(normalisePiece({ ...piece, size: 3 }, doc.pieces[id]), null);
+  assert.equal(normalisePiece(piece, null), null);
+});
+
+test('normalisePiece clamps coordinates and stamps a finite version', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('yellow', 2, 2);
+  const normalised = normalisePiece(
+    { ...doc.pieces[id], x: 999999, y: -999999, kind: 'star', rotation: 180, version: '4', by: 'a' },
+    doc.pieces[id],
+  );
+  assert.ok(normalised.x > 0 && normalised.x < WORLD.width);
+  assert.ok(normalised.y > 0 && normalised.y < WORLD.height);
+  assert.equal(normalised.kind, 'star');
+  assert.equal(normalised.rotation, 180);
+  assert.equal(normalised.version, 4);
+  assert.equal(normalised.by, 'a');
+});
+
 function stripDocument(doc) {
   const pieces = {};
   for (const [key, p] of Object.entries(doc.pieces)) {
@@ -341,4 +425,31 @@ test('mergeDocuments keeps the local game identity', () => {
   const local = createDocument('game-7');
   const remote = createDocument('game-9');
   assert.equal(mergeDocuments(local, remote).gameId, 'game-7');
+});
+
+test('mergeDocuments includes a piece that only the remote has', () => {
+  const id = pieceId('yellow', 3, 3);
+  const local = createDocument('g1');
+  const remote = createDocument('g1');
+  remote.pieces[id] = { ...remote.pieces[id], x: 123, y: 234, version: 5, by: 'b' };
+  // The local replica never saw this piece at all.
+  delete local.pieces[id];
+
+  const merged = mergeDocuments(local, remote);
+  assert.ok(merged.pieces[id], 'the remote-only piece survives the merge');
+  assert.equal(merged.pieces[id].x, 123);
+  assert.equal(merged.pieces[id].by, 'b');
+  // merging the other way round keeps it too
+  const reverse = mergeDocuments(remote, local);
+  assert.equal(reverse.pieces[id].x, 123);
+});
+
+test('mergeDocuments ignores a corrupt remote-only piece', () => {
+  const local = createDocument('g1');
+  const remote = createDocument('g1');
+  remote.pieces['purple-huge-9'] = {
+    id: 'purple-huge-9', color: 'purple', size: 9, kind: 'ship', x: 1, y: 1, rotation: 0, version: 5, by: 'b',
+  };
+  const merged = mergeDocuments(local, remote);
+  assert.equal(merged.pieces['purple-huge-9'], undefined);
 });

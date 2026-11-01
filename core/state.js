@@ -40,9 +40,14 @@ export const BANK = Object.freeze({
   cellHeight: 200,
   padding: 20,
   copies: 3,
+  // Horizontal offsets of the three copies within a Bank cell. Shared with the
+  // renderer via `BANK.copyOffsets` so the slots and the pieces line up.
+  copyOffsets: Object.freeze([-54, 0, 54]),
 });
 
-const COPY_OFFSETS = [-54, 0, 54];
+export const MIN_ZOOM = 0.25;
+export const MAX_ZOOM = 4;
+
 const HALF_EXTENT = 30; // clamping margin for a piece centre
 
 const KNOWN_COLORS = new Set(COLORS);
@@ -67,7 +72,7 @@ export function clampY(y) {
 }
 
 export function clampZoom(zoom) {
-  return clamp(zoom, 0.25, 4);
+  return clamp(zoom, MIN_ZOOM, MAX_ZOOM);
 }
 
 // Geometry of the Bank grid. Pure and deterministic; the renderer and the
@@ -127,7 +132,7 @@ export function createDocument(gameId = 'local', meta = {}) {
           color,
           size,
           kind: 'ship',
-          x: cell.centerX + COPY_OFFSETS[copy - 1],
+          x: cell.centerX + BANK.copyOffsets[copy - 1],
           y: cell.centerY,
           rotation: 0,
           version: 0,
@@ -182,6 +187,29 @@ export function isValidCamera(camera) {
   return true;
 }
 
+// The one place a piece is normalised, shared by the sync reducer and the JSON
+// import. `known` is the piece the document already holds for that id; it fixes
+// the immutable identity. Returns a clean piece (finite clamped coordinates, a
+// numeric version, a string author) or null when the input is not a valid,
+// identity-preserving piece. Keeps identical semantics on both paths: known id,
+// immutable colour/size, valid kind/rotation, finite clamped coords.
+export function normalisePiece(piece, known) {
+  if (!isValidPiece(piece)) return null;
+  if (!known || piece.id !== known.id) return null;
+  if (piece.color !== known.color || piece.size !== known.size) return null;
+  return {
+    id: piece.id,
+    color: piece.color,
+    size: piece.size,
+    kind: piece.kind,
+    x: clampX(piece.x),
+    y: clampY(piece.y),
+    rotation: piece.rotation,
+    version: Number(piece.version),
+    by: typeof piece.by === 'string' ? piece.by : '',
+  };
+}
+
 function withPiece(doc, piece) {
   return { ...doc, pieces: { ...doc.pieces, [piece.id]: piece } };
 }
@@ -221,6 +249,22 @@ export function buildPieceMessage(doc, id, changes = {}, by = '') {
   return { type: 'piece', id: messageId(), by, piece };
 }
 
+// Rotate a triangle between upright and upside down. A square (star) has no
+// meaningful rotation, so this returns null for it and for a missing piece.
+export function buildRotateMessage(doc, id, by = '') {
+  const piece = doc?.pieces?.[id];
+  if (!piece || piece.kind !== 'ship') return null;
+  return buildPieceMessage(doc, id, { rotation: piece.rotation === 0 ? 180 : 0 }, by);
+}
+
+// Flip a piece between triangle (ship) and square (star), in place. The colour,
+// size and remembered rotation are preserved.
+export function buildFlipMessage(doc, id, by = '') {
+  const piece = doc?.pieces?.[id];
+  if (!piece) return null;
+  return buildPieceMessage(doc, id, { kind: piece.kind === 'ship' ? 'star' : 'ship' }, by);
+}
+
 export function buildCameraMessage(doc, camera, by = '') {
   return {
     type: 'camera',
@@ -242,22 +286,12 @@ export function buildResetMessage(doc, by = '') {
 
 function applyPieceMessage(doc, message) {
   const piece = message.piece;
-  if (!isValidPiece(piece)) return doc;
-  const current = doc.pieces[piece.id];
-  if (!current) return doc;
-  // Identity (colour/size) is immutable: reject any attempt to change it.
-  if (piece.color !== current.color || piece.size !== current.size) return doc;
+  const normalised = normalisePiece(piece, piece ? doc.pieces[piece.id] : null);
+  if (!normalised) return doc;
+  const current = doc.pieces[normalised.id];
   const by = typeof message.by === 'string' ? message.by : '';
-  if (!isNewer(piece.version, by, current.version, current.by)) return doc;
-  return withPiece(doc, {
-    ...current,
-    kind: piece.kind,
-    rotation: piece.rotation,
-    x: clampX(piece.x),
-    y: clampY(piece.y),
-    version: Number(piece.version),
-    by,
-  });
+  if (!isNewer(normalised.version, by, current.version, current.by)) return doc;
+  return withPiece(doc, { ...normalised, by });
 }
 
 function applyResetMessage(doc, message) {
@@ -338,6 +372,16 @@ export function mergeDocuments(local, remote) {
     const theirs = remotePieces[id];
     if (!theirs) continue;
     out.pieces[id] = isNewer(theirs.version, theirs.by, mine.version, mine.by) ? theirs : mine;
+  }
+
+  // Pieces the local replica has never seen still arrive, still per-piece LWW.
+  // A corrupt remote-only piece is dropped rather than trusted.
+  for (const id of Object.keys(remotePieces)) {
+    if (id in out.pieces) continue;
+    const theirs = remotePieces[id];
+    if (isValidPiece(theirs) && theirs.id === id) {
+      out.pieces[id] = theirs;
+    }
   }
 
   const localCamera = local.camera;

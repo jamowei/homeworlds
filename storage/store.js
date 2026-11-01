@@ -8,7 +8,9 @@
 //
 // Public seam:
 //   createStore({ storage } = {}) -> { loadDocument, saveDocument,
-//                                      rememberGameId, lastGameId, isAvailable }
+//                                      rememberGameId, lastGameId,
+//                                      getPreference, setPreference,
+//                                      isAvailable }
 //
 // `storage` defaults to `globalThis.localStorage`; pass `null` (or any object
 // with get/set/remove) to test or to force the in-memory fallback.
@@ -99,9 +101,29 @@ export function createStore(options = {}) {
     return read(LAST_GAME_KEY);
   }
 
+  // Generic preference access through the same never-throwing seam as the
+  // document: used for the player name (and any future UI preference).
+  function getPreference(key) {
+    if (!key) return null;
+    return read(String(key));
+  }
+
+  function setPreference(key, value) {
+    if (!key) return false;
+    return write(String(key), String(value));
+  }
+
   function isAvailable() {
     return probe(storage);
   }
 
-  return { loadDocument, saveDocument, rememberGameId, lastGameId, isAvailable };
+  return {
+    loadDocument,
+    saveDocument,
+    rememberGameId,
+    lastGameId,
+    getPreference,
+    setPreference,
+    isAvailable,
+  };
 }
