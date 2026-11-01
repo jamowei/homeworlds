@@ -243,6 +243,44 @@
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
 }
 
+/* The piece the opponent is dragging right now. */
+.piece.remote-dragging .piece-shape {
+  stroke: var(--blue);
+  stroke-width: 4;
+  stroke-dasharray: 7 4;
+}
+.piece.remote-dragging {
+  filter: drop-shadow(0 0 8px var(--blue));
+}
+
+/* Opponent presence: cursor marker and name label. */
+.presence-layer {
+  pointer-events: none;
+}
+
+.remote-cursor-arrow {
+  fill: var(--blue);
+  stroke: rgba(15, 20, 32, 0.85);
+  stroke-width: 1.5;
+}
+
+.remote-cursor-label {
+  fill: var(--blue);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: rgba(15, 20, 32, 0.85);
+  stroke-width: 3px;
+}
+
+:root[data-theme="light"] .remote-cursor-arrow {
+  stroke: rgba(255, 255, 255, 0.9);
+}
+:root[data-theme="light"] .remote-cursor-label {
+  stroke: rgba(255, 255, 255, 0.9);
+}
+
 .piece-shape {
   stroke: rgba(15, 20, 32, 0.55);
   stroke-width: 2;
