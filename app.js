@@ -49,10 +49,7 @@ function handleOperation(op) {
   switch (op.type) {
     case 'move': {
       const message = buildPieceMessage(doc, op.id, { x: op.x, y: op.y }, PEER_ID);
-      if (message) {
-        doc = applyMessage(doc, message);
-        renderer.render(doc);
-      }
+      if (message) setDocument(applyMessage(doc, message));
       break;
     }
     case 'camera': {
