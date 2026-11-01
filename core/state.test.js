@@ -12,6 +12,7 @@ import {
   applyMessage,
   buildCameraMessage,
   buildPieceMessage,
+  buildResetMessage,
   clampZoom,
 } from './state.js';
 
@@ -228,4 +229,40 @@ test('a flipped-back triangle remembers its previous orientation', () => {
   next = applyMessage(next, buildPieceMessage(next, id, { kind: 'ship' }, 'a'));
   assert.equal(next.pieces[id].kind, 'ship');
   assert.equal(next.pieces[id].rotation, 180, 'and is restored on the flip back');
+});
+
+function stripDocument(doc) {
+  const pieces = {};
+  for (const [key, p] of Object.entries(doc.pieces)) {
+    pieces[key] = { id: p.id, color: p.color, size: p.size, kind: p.kind, x: p.x, y: p.y, rotation: p.rotation };
+  }
+  return {
+    pieces,
+    camera: { x: doc.camera.x, y: doc.camera.y, zoom: doc.camera.zoom },
+  };
+}
+
+test('reset returns a document equal to the initial one', () => {
+  const initial = createDocument('g1');
+  let doc = createDocument('g1');
+  const id = pieceId('red', 1, 1);
+  doc = applyMessage(doc, buildPieceMessage(doc, id, { x: 123, y: 456 }, 'a'));
+  doc = applyMessage(doc, buildPieceMessage(doc, id, { kind: 'star' }, 'a'));
+  doc = applyMessage(doc, buildPieceMessage(doc, pieceId('blue', 3, 3), { rotation: 180 }, 'a'));
+  doc = applyMessage(doc, buildResetMessage(doc, 'a'));
+  assert.deepEqual(stripDocument(doc), stripDocument(initial));
+});
+
+test('reset keeps the game identity', () => {
+  let doc = createDocument('game-7');
+  doc = applyMessage(doc, buildPieceMessage(doc, pieceId('green', 2, 2), { x: 10, y: 10 }, 'a'));
+  doc = applyMessage(doc, buildResetMessage(doc, 'a'));
+  assert.equal(doc.gameId, 'game-7');
+});
+
+test('a stale reset is ignored', () => {
+  let doc = createDocument('g1');
+  const first = applyMessage(doc, buildResetMessage(doc, 'a'));
+  const stale = { type: 'reset', id: 'r', by: 'b', version: 0 };
+  assert.equal(applyMessage(first, stale), first);
 });

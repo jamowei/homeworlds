@@ -4,7 +4,7 @@
 // zoom, pinch, +/− buttons). Later tickets extend this file with piece input,
 // transports, storage and presence.
 
-import { createDocument, applyMessage, buildCameraMessage, buildPieceMessage } from './core/state.js';
+import { createDocument, applyMessage, buildCameraMessage, buildPieceMessage, buildResetMessage } from './core/state.js';
 import { createRenderer } from './render/svg.js';
 
 const PEER_ID = 'local';
@@ -62,3 +62,13 @@ requestAnimationFrame(() => renderer.measure());
 
 document.getElementById('zoom-in')?.addEventListener('click', () => renderer.zoomBy(1.25));
 document.getElementById('zoom-out')?.addEventListener('click', () => renderer.zoomBy(0.8));
+
+document.getElementById('reset')?.addEventListener('click', () => {
+  const confirmed = window.confirm(
+    'Wirklich zurücksetzen? Alle 36 Steine gehen in die Bank zurück und der Gegner sieht denselben Zustand.',
+  );
+  if (!confirmed) return;
+  const message = buildResetMessage(doc, PEER_ID);
+  doc = applyMessage(doc, message);
+  renderer.render(doc);
+});
