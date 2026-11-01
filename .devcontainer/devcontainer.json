@@ -1,0 +1,35 @@
+{
+  "name": "homeworlds",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node",
+  "features": {
+    "ghcr.io/devcontainer-community/devcontainer-features/opencode.ai:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": []
+    },
+    "codium": {
+      "settings": {},
+	  "extensions": [],
+	},
+  },
+  "initializeCommand": "mkdir -p \"${localEnv:HOME}/.config/opencode\" \"${localEnv:HOME}/.agents/skills\" && touch \"${localEnv:HOME}/.gitconfig\"",
+  "mounts": [
+    {
+      "source": "${localEnv:HOME}/.config/opencode",
+	  "target": "/home/node/.config/opencode",
+      "type": "bind"
+    },
+    {
+      "source": "${localEnv:HOME}/.agents/skills",
+	  "target": "/home/node/.agents/skills",
+      "type": "bind"
+    },
+    {
+      "source": "${localEnv:HOME}/.gitconfig",
+	  "target": "/home/node/.gitconfig",
+      "type": "bind"
+    },
+  ]
+}
