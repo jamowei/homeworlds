@@ -68,6 +68,7 @@ export function zoomAround(camera, view, px, py, nextZoom) {
 export function createRenderer(svg, options = {}) {
   const emit = typeof options.onOperation === 'function' ? options.onOperation : () => {};
   let board = null;
+  let draggingId = null;
   let view = { w: svg.clientWidth || 960, h: svg.clientHeight || 640 };
 
   const boundary = el('rect', {
@@ -178,18 +179,47 @@ export function createRenderer(svg, options = {}) {
   function render(nextBoard) {
     board = nextBoard;
     pieces.replaceChildren();
-    for (const piece of Object.values(board.pieces)) {
-      pieces.appendChild(renderPiece(piece));
+    const all = Object.values(board.pieces);
+    // The piece being dragged is drawn last so it sits above the others.
+    all.sort((a, b) => (a.id === draggingId ? 1 : 0) - (b.id === draggingId ? 1 : 0));
+    for (const piece of all) {
+      const node = renderPiece(piece);
+      if (piece.id === draggingId) node.classList.add('dragging');
+      pieces.appendChild(node);
     }
     updateViewBox();
   }
 
-  // --- Camera input -------------------------------------------------------
+  // --- Pointer input ------------------------------------------------------
+  //
+  // One pointer drags a piece (move) or pans the background; two pointers
+  // pinch-zoom.
 
-  // Background drag pans; a piece drag is handled by later tickets.
   let pan = null;
+  let drag = null;
   let pinch = null;
   const activePointers = new Map();
+
+  function emitMove(id, event, final) {
+    const world = toWorld(event.clientX, event.clientY);
+    emit({ type: 'move', id, x: world.x + drag.offsetX, y: world.y + drag.offsetY, final: !!final });
+  }
+
+  function startDrag(id, event) {
+    const piece = board?.pieces?.[id];
+    if (!piece) return;
+    const world = toWorld(event.clientX, event.clientY);
+    drag = {
+      id,
+      pointerId: event.pointerId,
+      offsetX: piece.x - world.x,
+      offsetY: piece.y - world.y,
+    };
+    draggingId = id;
+    svg.setPointerCapture?.(event.pointerId);
+    render(board);
+    emit({ type: 'drag', id, phase: 'start' });
+  }
 
   svg.addEventListener('pointerdown', (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -203,10 +233,18 @@ export function createRenderer(svg, options = {}) {
         mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
       };
       pan = null;
+      if (drag) {
+        draggingId = null;
+        drag = null;
+      }
       return;
     }
 
-    if (event.target.closest && event.target.closest('.piece')) return; // piece drag: later ticket
+    const node = event.target.closest && event.target.closest('.piece');
+    if (node && node.dataset.id) {
+      startDrag(node.dataset.id, event);
+      return;
+    }
     pan = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: { ...currentCamera() } };
     svg.setPointerCapture?.(event.pointerId);
     svg.style.cursor = 'grabbing';
@@ -230,6 +268,11 @@ export function createRenderer(svg, options = {}) {
       return;
     }
 
+    if (drag && event.pointerId === drag.pointerId) {
+      emitMove(drag.id, event, false);
+      return;
+    }
+
     if (pan && event.pointerId === pan.pointerId) {
       const dx = (event.clientX - pan.x) / pan.camera.zoom;
       const dy = (event.clientY - pan.y) / pan.camera.zoom;
@@ -240,6 +283,13 @@ export function createRenderer(svg, options = {}) {
   function endPointer(event) {
     activePointers.delete(event.pointerId);
     if (activePointers.size < 2) pinch = null;
+    if (drag && event.pointerId === drag.pointerId) {
+      emitMove(drag.id, event, true);
+      emit({ type: 'drag', id: drag.id, phase: 'end' });
+      drag = null;
+      draggingId = null;
+      render(board);
+    }
     if (pan && event.pointerId === pan.pointerId) {
       pan = null;
       svg.style.cursor = '';

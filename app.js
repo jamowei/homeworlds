@@ -4,7 +4,7 @@
 // zoom, pinch, +/− buttons), 06 adds autosave/resume. Later tickets extend this
 // file with piece input, transports and presence.
 
-import { createDocument, applyMessage, buildCameraMessage } from './core/state.js';
+import { createDocument, applyMessage, buildCameraMessage, buildPieceMessage } from './core/state.js';
 import { createRenderer } from './render/svg.js';
 import { createStore } from './storage/store.js';
 
@@ -47,6 +47,14 @@ function setDocument(next) {
 
 function handleOperation(op) {
   switch (op.type) {
+    case 'move': {
+      const message = buildPieceMessage(doc, op.id, { x: op.x, y: op.y }, PEER_ID);
+      if (message) {
+        doc = applyMessage(doc, message);
+        renderer.render(doc);
+      }
+      break;
+    }
     case 'camera': {
       const message = buildCameraMessage(doc, op.camera, PEER_ID);
       setDocument(applyMessage(doc, message));
