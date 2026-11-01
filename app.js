@@ -1,17 +1,27 @@
 // app.js — wiring for the shared board page.
 //
 // Tickets so far: 01 paints the initial board, 02/03 add piece input, 04 adds
-// Reset, 05 adds the camera, 06 adds autosave/resume. Later tickets extend this
-// file with transports and presence.
+// Reset, 05 adds the camera, 06 adds autosave/resume, 07 adds same-browser sync
+// through the transport hub. Later tickets extend this file with WebRTC,
+// identity/handshake, presence and fallbacks.
 
-import { createDocument, applyMessage, buildCameraMessage, buildPieceMessage, buildResetMessage } from './core/state.js';
+import {
+  createDocument,
+  applyMessage,
+  buildCameraMessage,
+  buildPieceMessage,
+  buildResetMessage,
+} from './core/state.js';
 import { createRenderer } from './render/svg.js';
 import { createStore } from './storage/store.js';
+import { createHub } from './transport/hub.js';
+import { createBroadcastTransport } from './transport/broadcast.js';
 
 const PEER_ID = 'local';
 const SAVE_DEBOUNCE_MS = 300;
 
 const svg = document.getElementById('board');
+const statusEl = document.getElementById('status');
 const store = createStore();
 
 // Resume the game we were last in: an explicit `?game=` wins, then the
@@ -26,8 +36,6 @@ let doc = saved && saved.pieces && saved.camera ? saved : createDocument(gameId)
 const renderer = createRenderer(svg, { onOperation: handleOperation });
 
 // Autosave: every document change is persisted, debounced, with no Save button.
-// When storage is unavailable `saveDocument` is a no-op and the document simply
-// lives in memory for this session.
 let saveTimer = null;
 function flushSave() {
   clearTimeout(saveTimer);
@@ -45,32 +53,65 @@ function setDocument(next) {
   scheduleSave();
 }
 
+// --- Sync ---------------------------------------------------------------
+
+const hub = createHub({
+  onMessage: receiveRemote,
+  onStatus: updateStatus,
+});
+
+// Same-browser tabs always share one board with zero setup.
+hub.add(createBroadcastTransport(`hw-board:${gameId}`));
+
+function dispatch(message) {
+  if (!message) return;
+  setDocument(applyMessage(doc, message));
+  hub.send(message);
+}
+
+function receiveRemote(message) {
+  const next = applyMessage(doc, message);
+  if (next !== doc) setDocument(next);
+}
+
+function updateStatus(status) {
+  if (!statusEl) return;
+  const known = ['connected', 'waiting', 'disconnected', 'unavailable'];
+  const state = known.includes(status) ? status : 'offline';
+  statusEl.dataset.state = state;
+  statusEl.textContent = {
+    connected: 'Verbunden',
+    waiting: 'Warte auf Gegner',
+    disconnected: 'Getrennt',
+    unavailable: 'Kein Sync verfügbar',
+    offline: 'Nicht verbunden',
+  }[state];
+}
+
+// --- Local operations ---------------------------------------------------
+
 function handleOperation(op) {
   switch (op.type) {
     case 'move': {
-      const message = buildPieceMessage(doc, op.id, { x: op.x, y: op.y }, PEER_ID);
-      if (message) setDocument(applyMessage(doc, message));
+      dispatch(buildPieceMessage(doc, op.id, { x: op.x, y: op.y }, PEER_ID));
       break;
     }
     case 'rotate': {
       const piece = doc.pieces[op.id];
       if (!piece || piece.kind !== 'ship') break;
       const rotation = piece.rotation === 0 ? 180 : 0;
-      const message = buildPieceMessage(doc, op.id, { rotation }, PEER_ID);
-      if (message) setDocument(applyMessage(doc, message));
+      dispatch(buildPieceMessage(doc, op.id, { rotation }, PEER_ID));
       break;
     }
     case 'flip': {
       const piece = doc.pieces[op.id];
       if (!piece) break;
       const kind = piece.kind === 'ship' ? 'star' : 'ship';
-      const message = buildPieceMessage(doc, op.id, { kind }, PEER_ID);
-      if (message) setDocument(applyMessage(doc, message));
+      dispatch(buildPieceMessage(doc, op.id, { kind }, PEER_ID));
       break;
     }
     case 'camera': {
-      const message = buildCameraMessage(doc, op.camera, PEER_ID);
-      setDocument(applyMessage(doc, message));
+      dispatch(buildCameraMessage(doc, op.camera, PEER_ID));
       break;
     }
     default:
@@ -92,6 +133,5 @@ document.getElementById('reset')?.addEventListener('click', () => {
     'Wirklich zurücksetzen? Alle 36 Steine gehen in die Bank zurück und der Gegner sieht denselben Zustand.',
   );
   if (!confirmed) return;
-  const message = buildResetMessage(doc, PEER_ID);
-  setDocument(applyMessage(doc, message));
+  dispatch(buildResetMessage(doc, PEER_ID));
 });
