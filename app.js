@@ -16,6 +16,7 @@ import { createRenderer } from './render/svg.js';
 import { createStore } from './storage/store.js';
 import { createHub } from './transport/hub.js';
 import { createBroadcastTransport } from './transport/broadcast.js';
+import { createPeerRegistry } from './transport/peers.js';
 import { createWebRtcTransport, isWebRtcSupported } from './transport/webrtc.js';
 import { encodeFragment, decodeFragment, encodePaste, decodePaste } from './signalling/codec.js';
 
@@ -89,6 +90,8 @@ function setDocument(next) {
 
 let opponentName = null;
 const transportStatus = new Map();
+const peers = createPeerRegistry({ self: PEER_ID, limit: 2 });
+const rejectedPeers = new Set();
 
 const hub = createHub({
   onMessage: receiveRemote,
@@ -145,12 +148,19 @@ function dispatch(message) {
 function receiveRemote(message) {
   if (!message || typeof message !== 'object') return;
   if (message.type === 'hello') {
-    if (message.by !== PEER_ID && message.name) {
-      opponentName = message.name;
-      updateStatus();
+    if (message.by === PEER_ID || !message.by) return;
+    if (!peers.has(message.by) && !peers.register(message.by)) {
+      // Exactly two players: reject and ignore a third.
+      rejectedPeers.add(message.by);
+      hub.send({ type: 'reject', id: `${PEER_ID}-reject-${message.by}`, by: PEER_ID });
+      return;
     }
+    if (message.name) opponentName = message.name;
+    updateStatus();
     return;
   }
+  if (message.type === 'reject') return;
+  if (message.by && rejectedPeers.has(message.by)) return;
   const next = applyMessage(doc, message);
   if (next !== doc) setDocument(next);
 }

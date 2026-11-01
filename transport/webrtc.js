@@ -59,6 +59,7 @@ export function createWebRtcTransport(options = {}) {
   let pc = null;
   let channel = null;
   let closed = false;
+  let answered = false;
   const queue = [];
 
   function emitStatus(status) {
@@ -124,8 +125,10 @@ export function createWebRtcTransport(options = {}) {
 
   async function acceptAnswer(blob) {
     if (!pc) throw new Error('Kein Angebot vorhanden.');
+    if (answered) throw new Error('Es sind bereits zwei Spieler verbunden.');
     if (!blob || !blob.sdp) throw new Error('Ungültige Antwort.');
     await pc.setRemoteDescription(blob.sdp);
+    answered = true;
     emitStatus('waiting');
   }
 
