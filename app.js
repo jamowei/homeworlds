@@ -1,8 +1,8 @@
 // app.js — wiring for the shared board page.
 //
-// Tickets so far: 01 paints the initial board, 05 adds the camera (pan, wheel
-// zoom, pinch, +/− buttons), 06 adds autosave/resume. Later tickets extend this
-// file with piece input, transports and presence.
+// Tickets so far: 01 paints the initial board, 02/03 add piece input, 04 adds
+// Reset, 05 adds the camera, 06 adds autosave/resume. Later tickets extend this
+// file with transports and presence.
 
 import { createDocument, applyMessage, buildCameraMessage, buildPieceMessage, buildResetMessage } from './core/state.js';
 import { createRenderer } from './render/svg.js';
@@ -57,10 +57,7 @@ function handleOperation(op) {
       if (!piece || piece.kind !== 'ship') break;
       const rotation = piece.rotation === 0 ? 180 : 0;
       const message = buildPieceMessage(doc, op.id, { rotation }, PEER_ID);
-      if (message) {
-        doc = applyMessage(doc, message);
-        renderer.render(doc);
-      }
+      if (message) setDocument(applyMessage(doc, message));
       break;
     }
     case 'flip': {
@@ -68,10 +65,7 @@ function handleOperation(op) {
       if (!piece) break;
       const kind = piece.kind === 'ship' ? 'star' : 'ship';
       const message = buildPieceMessage(doc, op.id, { kind }, PEER_ID);
-      if (message) {
-        doc = applyMessage(doc, message);
-        renderer.render(doc);
-      }
+      if (message) setDocument(applyMessage(doc, message));
       break;
     }
     case 'camera': {
@@ -99,6 +93,5 @@ document.getElementById('reset')?.addEventListener('click', () => {
   );
   if (!confirmed) return;
   const message = buildResetMessage(doc, PEER_ID);
-  doc = applyMessage(doc, message);
-  renderer.render(doc);
+  setDocument(applyMessage(doc, message));
 });
