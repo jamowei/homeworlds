@@ -14,21 +14,23 @@
 	  "extensions": [],
 	},
   },
+  "remoteUser": "${localEnv:USER}",
+  "updateRemoteUserUID": true,
   "initializeCommand": "mkdir -p \"${localEnv:HOME}/.config/opencode\" \"${localEnv:HOME}/.agents/skills\" && touch \"${localEnv:HOME}/.gitconfig\"",
   "mounts": [
     {
       "source": "${localEnv:HOME}/.config/opencode",
-	  "target": "/home/node/.config/opencode",
+	  "target": "${localEnv:HOME}/.config/opencode",
       "type": "bind"
     },
     {
       "source": "${localEnv:HOME}/.agents/skills",
-	  "target": "/home/node/.agents/skills",
+	  "target": "${localEnv:HOME}/.agents/skills",
       "type": "bind"
     },
     {
       "source": "${localEnv:HOME}/.gitconfig",
-	  "target": "/home/node/.gitconfig",
+	  "target": "${localEnv:HOME}/.gitconfig",
       "type": "bind"
     },
   ]

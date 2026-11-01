@@ -1,0 +1,9 @@
+{
+  "name": "homeworlds-shared-board",
+  "private": true,
+  "type": "module",
+  "description": "Serverless two-player shared Homeworlds board (static, no runtime dependencies).",
+  "scripts": {
+    "test": "node --test"
+  }
+}

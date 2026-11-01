@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Homeworlds: Gemeinsamer Tisch</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="play.css">
+</head>
+<body class="play-body">
+<button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Darstellung wechseln (hell/dunkel)"><span class="icon">🌓</span><span class="label">Helles Design</span></button>
+
+<div class="play-wrap">
+  <header class="play-header">
+    <h1>Gemeinsamer Tisch</h1>
+    <p class="hint">Freies Tabletop ohne Regelprüfung – die Regeln kennt ihr.</p>
+  </header>
+
+  <div class="play-toolbar" id="toolbar">
+    <span class="status" id="status" data-state="offline">Nicht verbunden</span>
+  </div>
+
+  <div class="board-frame">
+    <svg id="board" class="board" role="img" aria-label="Homeworlds-Spielbrett"></svg>
+  </div>
+
+  <div class="bottom-nav">
+    <span class="lbl">Weiterführende Links</span>
+    <ul>
+      <li><a href="index.html">Kurzreferenz</a></li>
+      <li><a href="guide.html">Babamots' Strategie-Guide</a></li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  (function () {
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      var label = document.querySelector(".theme-toggle .label");
+      if (label) {
+        label.textContent = theme === "light" ? "Dunkles Design" : "Helles Design";
+      }
+    }
+    var saved = null;
+    try { saved = localStorage.getItem("hw-theme"); } catch (e) {}
+    var theme = saved === "light" || saved === "dark"
+      ? saved
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    applyTheme(theme);
+    window.toggleTheme = function () {
+      var current = document.documentElement.getAttribute("data-theme");
+      var next = current === "light" ? "dark" : "light";
+      applyTheme(next);
+      try { localStorage.setItem("hw-theme", next); } catch (e) {}
+    };
+  })();
+</script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
