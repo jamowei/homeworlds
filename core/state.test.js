@@ -14,6 +14,8 @@ import {
   buildPieceMessage,
   buildResetMessage,
   clampZoom,
+  mergeDocuments,
+  resetDocument,
 } from './state.js';
 
 test('createDocument yields exactly 36 pieces', () => {
@@ -265,4 +267,78 @@ test('a stale reset is ignored', () => {
   const first = applyMessage(doc, buildResetMessage(doc, 'a'));
   const stale = { type: 'reset', id: 'r', by: 'b', version: 0 };
   assert.equal(applyMessage(first, stale), first);
+});
+
+// --- mergeDocuments (reconnect) -----------------------------------------
+//
+// When two players reconnect after being offline they exchange whole
+// documents. `mergeDocuments` resolves every conflict without a user
+// decision: the newest per-piece version wins, and equal versions are
+// tie-broken by peer id so both replicas agree on the same result.
+
+function documentWithPiece(id, changes, version, by) {
+  const doc = createDocument('g1');
+  doc.pieces[id] = { ...doc.pieces[id], ...changes, version, by };
+  return doc;
+}
+
+test('mergeDocuments keeps the newest version of each piece', () => {
+  const id = pieceId('red', 3, 1);
+  const local = documentWithPiece(id, { x: 100, y: 100 }, 1, 'a');
+  const remote = documentWithPiece(id, { x: 200, y: 200 }, 5, 'b');
+  assert.equal(mergeDocuments(local, remote).pieces[id].x, 200, 'newer remote wins');
+  assert.equal(mergeDocuments(remote, local).pieces[id].x, 200, 'newer local wins');
+});
+
+test('mergeDocuments resolves each piece independently', () => {
+  const a = pieceId('yellow', 1, 1);
+  const b = pieceId('blue', 2, 2);
+  let local = createDocument('g1');
+  local.pieces[a] = { ...local.pieces[a], x: 100, y: 100, version: 4, by: 'a' };
+  local.pieces[b] = { ...local.pieces[b], x: 100, y: 100, version: 2, by: 'a' };
+  let remote = createDocument('g1');
+  remote.pieces[a] = { ...remote.pieces[a], x: 900, y: 900, version: 3, by: 'b' };
+  remote.pieces[b] = { ...remote.pieces[b], x: 900, y: 900, version: 8, by: 'b' };
+  const merged = mergeDocuments(local, remote);
+  assert.equal(merged.pieces[a].x, 100, 'local has the newer version for a');
+  assert.equal(merged.pieces[b].x, 900, 'remote has the newer version for b');
+});
+
+test('mergeDocuments breaks a version tie by peer id, same both ways', () => {
+  const id = pieceId('green', 2, 2);
+  const a = documentWithPiece(id, { x: 10, y: 10 }, 7, 'aaa');
+  const b = documentWithPiece(id, { x: 20, y: 20 }, 7, 'bbb');
+  assert.equal(mergeDocuments(a, b).pieces[id].x, 20, 'higher peer id wins');
+  assert.equal(mergeDocuments(b, a).pieces[id].x, 20, 'and wins from either side');
+});
+
+test('equal-version divergence resolves deterministically', () => {
+  const id = pieceId('blue', 1, 3);
+  const a = documentWithPiece(id, { x: 10, y: 10, kind: 'star' }, 9, 'peer-a');
+  const b = documentWithPiece(id, { x: 20, y: 20, kind: 'ship' }, 9, 'peer-b');
+  const first = mergeDocuments(a, b).pieces[id];
+  const second = mergeDocuments(b, a).pieces[id];
+  assert.deepEqual(first, second, 'both peers compute the same winner');
+  assert.equal(first.by, 'peer-b');
+});
+
+test('mergeDocuments carries a newer remote reset', () => {
+  const local = createDocument('g1');
+  const remote = resetDocument(local, 42, 'b');
+  const merged = mergeDocuments(local, remote);
+  assert.equal(merged.resetVersion, 42);
+  assert.equal(merged.resetBy, 'b');
+});
+
+test('mergeDocuments tolerates a remote without pieces or camera', () => {
+  const local = createDocument('g1');
+  const merged = mergeDocuments(local, { gameId: 'g1' });
+  assert.equal(Object.keys(merged.pieces).length, 36);
+  assert.deepEqual(merged.camera, local.camera);
+});
+
+test('mergeDocuments keeps the local game identity', () => {
+  const local = createDocument('game-7');
+  const remote = createDocument('game-9');
+  assert.equal(mergeDocuments(local, remote).gameId, 'game-7');
 });

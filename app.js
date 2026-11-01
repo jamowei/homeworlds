@@ -11,6 +11,7 @@ import {
   buildCameraMessage,
   buildPieceMessage,
   buildResetMessage,
+  mergeDocuments,
 } from './core/state.js';
 import { createRenderer } from './render/svg.js';
 import { createStore } from './storage/store.js';
@@ -92,6 +93,9 @@ let opponentName = null;
 const transportStatus = new Map();
 const peers = createPeerRegistry({ self: PEER_ID, limit: 2 });
 const rejectedPeers = new Set();
+// Transports that have already sent their one `sync` for this connection. It is
+// cleared on disconnect so a reconnected transport syncs again.
+const syncedTransports = new Set();
 
 const hub = createHub({
   onMessage: receiveRemote,
@@ -99,6 +103,7 @@ const hub = createHub({
     transportStatus.set(transport, status);
     updateStatus();
     if (status === 'connected') onConnected(transport);
+    else if (status === 'disconnected' || status === 'closed') syncedTransports.delete(transport);
   },
 });
 
@@ -134,9 +139,19 @@ function updateStatus() {
   statusEl.textContent = text;
 }
 
-function onConnected() {
+function onConnected(transport) {
   hideHandshake();
+  // One hello + one document sync per connection. Receiving a `sync` never
+  // triggers one in return, so the exchange cannot loop.
+  if (transport && syncedTransports.has(transport)) return;
+  if (transport) syncedTransports.add(transport);
   hub.send({ type: 'hello', id: `${PEER_ID}-hello-${Math.random().toString(36).slice(2)}`, by: PEER_ID, name: requireName() });
+  sendSync();
+}
+
+// Send the whole local document so the two boards can be merged per piece.
+function sendSync() {
+  hub.send({ type: 'sync', id: `${PEER_ID}-sync-${Math.random().toString(36).slice(2)}`, by: PEER_ID, document: doc });
 }
 
 function dispatch(message) {
@@ -161,6 +176,13 @@ function receiveRemote(message) {
   }
   if (message.type === 'reject') return;
   if (message.by && rejectedPeers.has(message.by)) return;
+  // A reconnect sync carries a whole document; merge it per piece by newest
+  // version (tie-broken by peer id) so offline divergence resolves itself.
+  if (message.type === 'sync') {
+    if (!message.by || message.by === PEER_ID || !message.document) return;
+    setDocument(mergeDocuments(doc, message.document));
+    return;
+  }
   const next = applyMessage(doc, message);
   if (next !== doc) setDocument(next);
 }
@@ -222,11 +244,52 @@ function newGameId() {
   return (globalThis.crypto?.randomUUID?.() || `g-${Math.random().toString(36).slice(2)}`).slice(0, 16);
 }
 
+// Drop the current WebRTC transport cleanly before building a new one. Closing
+// it removes it from the hub, so a stale channel can never deliver messages
+// into the fresh connection.
+function teardownWebRtc() {
+  if (!webrtc) return;
+  const old = webrtc;
+  webrtc = null;
+  syncedTransports.delete(old);
+  hub.remove(old);
+}
+
 function attachWebRtc(transport) {
+  teardownWebRtc();
   webrtc = transport;
   transport.onError = (event) => console.warn('WebRTC-Fehler', event);
   hub.add(transport);
   return transport;
+}
+
+// --- Reconnect (ticket 11) ----------------------------------------------
+//
+// WebRTC cannot silently reconnect, so resuming the *same* game needs a fresh
+// invite/reply exchange. This keeps the current gameId (and therefore the
+// saved board) and only rebuilds the transport; on connect the peers merge.
+
+async function reconnect() {
+  requireName();
+  if (!isWebRtcSupported()) {
+    showError('gate-error', 'Dieser Browser kann kein WebRTC – Peer-Verbindungen sind nicht möglich.');
+    return;
+  }
+  showError('gate-error', '');
+  showGate(false);
+  const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
+  try {
+    const offer = await transport.createOffer();
+    showHandshake({
+      title: 'Verbindung erneuern',
+      help: 'Dieselbe Partie: Sende diesen neuen Einladungs-Link und füge danach die Antwort wieder unten ein.',
+      link: linkFor(offer),
+      blob: encodePaste(offer),
+      reply: true,
+    });
+  } catch (error) {
+    showError('gate-error', error?.message || 'Verbindung konnte nicht erneuert werden.');
+  }
 }
 
 async function createGame() {
@@ -354,6 +417,7 @@ $('reset')?.addEventListener('click', () => {
 });
 
 $('create-game')?.addEventListener('click', () => createGame());
+$('reconnect')?.addEventListener('click', () => reconnect());
 $('join-game')?.addEventListener('click', () => joinFromText($('join-input')?.value));
 $('accept-reply')?.addEventListener('click', () => acceptReplyText($('reply-input')?.value));
 $('gate-skip')?.addEventListener('click', () => showGate(false));
