@@ -69,6 +69,7 @@ export function createRenderer(svg, options = {}) {
   const emit = typeof options.onOperation === 'function' ? options.onOperation : () => {};
   let board = null;
   let draggingId = null;
+  const remotePresence = { cursor: null, draggingId: null, name: '' };
   let view = { w: svg.clientWidth || 960, h: svg.clientHeight || 640 };
 
   const boundary = el('rect', {
@@ -80,6 +81,9 @@ export function createRenderer(svg, options = {}) {
   });
   const slots = el('g', { class: 'bank-slots' });
   const pieces = el('g', { class: 'board-pieces' });
+  // Opponent presence (cursor + drag highlight) lives above the pieces and is
+  // never part of the document.
+  const presenceLayer = el('g', { class: 'presence-layer' });
 
   const layout = bankLayout();
   for (const color of COLORS) {
@@ -103,6 +107,7 @@ export function createRenderer(svg, options = {}) {
   svg.appendChild(boundary);
   svg.appendChild(slots);
   svg.appendChild(pieces);
+  svg.appendChild(presenceLayer);
 
   function updateViewBox() {
     if (!board) return;
@@ -125,12 +130,30 @@ export function createRenderer(svg, options = {}) {
     return { px: event.clientX - rect.left, py: event.clientY - rect.top, rect };
   }
 
+  function toWorld(clientX, clientY) {
+    const rect = svg.getBoundingClientRect();
+    return screenToWorld(currentCamera(), view, clientX - rect.left, clientY - rect.top);
+  }
+
   function currentCamera() {
     return board ? board.camera : { x: WORLD.width / 2, y: WORLD.height / 2, zoom: 1 };
   }
 
   function emitCamera(camera) {
     emit({ type: 'camera', camera: { x: camera.x, y: camera.y, zoom: clampZoom(camera.zoom) } });
+  }
+
+  // Throttled cursor sharing: ~25 updates/s is smooth without flooding the
+  // transport. The cursor is in world coordinates, so it pans and zooms with
+  // the board on the opponent's screen.
+  const CURSOR_INTERVAL_MS = 40;
+  let lastCursorAt = 0;
+  function emitCursor(event) {
+    const now = Date.now();
+    if (now - lastCursorAt < CURSOR_INTERVAL_MS) return;
+    lastCursorAt = now;
+    const world = toWorld(event.clientX, event.clientY);
+    emit({ type: 'cursor', cursor: { x: world.x, y: world.y } });
   }
 
   function renderPiece(piece) {
@@ -187,7 +210,48 @@ export function createRenderer(svg, options = {}) {
       if (piece.id === draggingId) node.classList.add('dragging');
       pieces.appendChild(node);
     }
+    applyDragHighlight();
     updateViewBox();
+  }
+
+  // --- Opponent presence --------------------------------------------------
+
+  function applyDragHighlight() {
+    for (const node of pieces.children) {
+      node.classList.toggle('remote-dragging', node.dataset.id === remotePresence.draggingId);
+    }
+  }
+
+  function renderPresence() {
+    presenceLayer.replaceChildren();
+    const { cursor, name } = remotePresence;
+    if (!cursor) return;
+    const group = el('g', {
+      class: 'remote-cursor',
+      transform: `translate(${cursor.x} ${cursor.y})`,
+    });
+    group.appendChild(
+      el('path', {
+        class: 'remote-cursor-arrow',
+        d: 'M0,0 L0,22 L6,16 L11,26 L15,24 L10,14 L18,14 Z',
+      }),
+    );
+    if (name) {
+      const label = el('text', { class: 'remote-cursor-label', x: 16, y: 24 });
+      label.textContent = name;
+      group.appendChild(label);
+    }
+    presenceLayer.appendChild(group);
+  }
+
+  // Update what we know about the opponent. Each key is optional; `cursor` is
+  // null when unknown, `draggingId` is null when they have released.
+  function setPresence(patch = {}) {
+    if ('cursor' in patch) remotePresence.cursor = patch.cursor || null;
+    if ('draggingId' in patch) remotePresence.draggingId = patch.draggingId || null;
+    if ('name' in patch) remotePresence.name = patch.name || '';
+    renderPresence();
+    applyDragHighlight();
   }
 
   // --- Pointer input ------------------------------------------------------
@@ -241,6 +305,7 @@ export function createRenderer(svg, options = {}) {
         if (drag && drag.id === id && !drag.moved) {
           emit({ type: 'flip', id });
           if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
+          emit({ type: 'drag', id, phase: 'end' });
           drag = null;
           draggingId = null;
           render(board);
@@ -263,6 +328,7 @@ export function createRenderer(svg, options = {}) {
       pan = null;
       if (drag) {
         if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
+        emit({ type: 'drag', id: drag.id, phase: 'end' });
         draggingId = null;
         drag = null;
       }
@@ -280,6 +346,7 @@ export function createRenderer(svg, options = {}) {
   });
 
   svg.addEventListener('pointermove', (event) => {
+    emitCursor(event);
     if (activePointers.has(event.pointerId)) {
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     }
@@ -389,12 +456,10 @@ export function createRenderer(svg, options = {}) {
     render,
     measure,
     zoomBy,
+    setPresence,
     getCamera: currentCamera,
     getView: () => view,
-    toWorld: (clientX, clientY) => {
-      const rect = svg.getBoundingClientRect();
-      return screenToWorld(currentCamera(), view, clientX - rect.left, clientY - rect.top);
-    },
+    toWorld,
     destroy() {
       observer?.disconnect();
     },

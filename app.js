@@ -11,8 +11,10 @@ import {
   buildCameraMessage,
   buildPieceMessage,
   buildResetMessage,
+  messageId,
 } from './core/state.js';
 import { createRenderer } from './render/svg.js';
+import { buildCursorMessage, buildDragMessage, readPresence } from './presence/messages.js';
 import { createStore } from './storage/store.js';
 import { createHub } from './transport/hub.js';
 import { createBroadcastTransport } from './transport/broadcast.js';
@@ -161,6 +163,10 @@ function receiveRemote(message) {
   }
   if (message.type === 'reject') return;
   if (message.by && rejectedPeers.has(message.by)) return;
+  if (message.type === 'cursor' || message.type === 'drag') {
+    applyPresence(message);
+    return;
+  }
   const next = applyMessage(doc, message);
   if (next !== doc) setDocument(next);
 }
@@ -172,6 +178,31 @@ function switchGame(nextGameId) {
   doc = { ...doc, gameId };
   useBroadcast(gameId);
   scheduleSave();
+}
+
+// --- Presence -----------------------------------------------------------
+//
+// Transient opponent cursor and drag highlight. Presence rides the same hub as
+// board changes but is never fed through `applyMessage`: it does not mutate the
+// document.
+
+function ownName() {
+  return (nameInput?.value || '').trim() || 'Gast';
+}
+
+function sendPresence(message) {
+  hub.send({ ...message, id: messageId(), by: PEER_ID, name: ownName() });
+}
+
+function applyPresence(message) {
+  if (!message.by || message.by === PEER_ID) return;
+  const patch = readPresence(message);
+  if (!patch) return;
+  if (patch.name && patch.name !== opponentName) {
+    opponentName = patch.name;
+    updateStatus();
+  }
+  renderer.setPresence({ ...patch, name: opponentName || patch.name || '' });
 }
 
 // --- Handshake UI -------------------------------------------------------
@@ -329,6 +360,12 @@ function handleOperation(op) {
     }
     case 'camera':
       dispatch(buildCameraMessage(doc, op.camera, PEER_ID));
+      break;
+    case 'cursor':
+      sendPresence(buildCursorMessage({ x: op.cursor?.x, y: op.cursor?.y }));
+      break;
+    case 'drag':
+      sendPresence(buildDragMessage({ pieceId: op.phase === 'end' ? null : op.id }));
       break;
     default:
       break;
