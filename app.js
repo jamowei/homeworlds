@@ -105,7 +105,7 @@ const hub = createHub({
   onStatus: (status, transport) => {
     transportStatus.set(transport, status);
     updateStatus();
-    if (status === 'connected') onConnected(transport);
+    if (status === 'connected' || status === 'available') onConnected(transport);
     else if (status === 'disconnected' || status === 'closed') syncedTransports.delete(transport);
   },
 });
@@ -122,7 +122,11 @@ function aggregateStatus() {
   const active = [...transportStatus.values()].filter((v) => v !== 'available');
   if (active.includes('connected')) return 'connected';
   if (active.includes('waiting')) return 'waiting';
+  if (active.some((v) => v === 'disconnected' || v === 'closed')) return 'disconnected';
   if (active.length > 0 && active.every((v) => v === 'unavailable')) return 'unavailable';
+  // Same-browser tabs talk over BroadcastChannel, which cannot report a peer by
+  // itself — a `hello` from another player is what makes us connected.
+  if (peers.size() > 1) return 'connected';
   if (active.length > 0) return 'disconnected';
   return 'offline';
 }
@@ -175,6 +179,15 @@ function receiveRemote(message) {
     }
     if (message.name) opponentName = message.name;
     updateStatus();
+    // Answer once so the other side also learns our name, without looping.
+    hub.send({ type: 'hello-ack', id: messageId(), by: PEER_ID, name: requireName() });
+    return;
+  }
+  if (message.type === 'hello-ack') {
+    if (message.by && message.by !== PEER_ID && (peers.has(message.by) || peers.register(message.by))) {
+      if (message.name) opponentName = message.name;
+      updateStatus();
+    }
     return;
   }
   if (message.type === 'reject') return;
