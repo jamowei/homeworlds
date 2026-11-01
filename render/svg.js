@@ -4,15 +4,12 @@
 // a document to shapes and maps user gestures to operations, emitting them via
 // `onOperation`. It contains no game logic and never mutates the document.
 
-import { WORLD, BANK, bankLayout, COLORS, SIZES, clamp, clampZoom } from '../core/state.js';
+import { WORLD, BANK, bankLayout, COLORS, SIZES, clamp, clampZoom, MIN_ZOOM, MAX_ZOOM } from '../core/state.js';
 
 export const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Side length of a piece triangle in world units.
 export const PIECE_SIZE = 48;
-
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 4;
 
 const COLOR_VAR = {
   yellow: 'var(--yellow)',
@@ -20,8 +17,6 @@ const COLOR_VAR = {
   red: 'var(--red)',
   blue: 'var(--blue)',
 };
-
-const COPY_OFFSETS = [-54, 0, 54];
 
 function el(name, attrs = {}) {
   const node = document.createElementNS(SVG_NS, name);
@@ -92,7 +87,7 @@ export function createRenderer(svg, options = {}) {
       for (let copy = 0; copy < BANK.copies; copy++) {
         slots.appendChild(
           el('rect', {
-            x: cell.centerX + COPY_OFFSETS[copy] - PIECE_SIZE / 2 - 6,
+            x: cell.centerX + BANK.copyOffsets[copy] - PIECE_SIZE / 2 - 6,
             y: cell.centerY - PIECE_SIZE / 2 - 8,
             width: PIECE_SIZE + 12,
             height: PIECE_SIZE + 16,
@@ -140,8 +135,68 @@ export function createRenderer(svg, options = {}) {
   }
 
   function emitCamera(camera) {
+    cameraThrottle.push(camera);
+  }
+
+  function sendCamera(camera) {
     emit({ type: 'camera', camera: { x: camera.x, y: camera.y, zoom: clampZoom(camera.zoom) } });
   }
+
+  // Trailing throttle: at most one update per interval, keeping only the latest
+  // pending value and always flushing it, so the final position is never lost.
+  function throttle(intervalMs, send) {
+    let last = 0;
+    let timer = null;
+    let pending = null;
+    let hasPending = false;
+
+    function fire() {
+      timer = null;
+      hasPending = false;
+      last = Date.now();
+      const value = pending;
+      pending = null;
+      send(value);
+    }
+
+    return {
+      push(value) {
+        pending = value;
+        hasPending = true;
+        const wait = intervalMs - (Date.now() - last);
+        if (wait <= 0) {
+          if (timer) {
+            clearTimeout(timer);
+            timer = null;
+          }
+          fire();
+        } else if (!timer) {
+          timer = setTimeout(fire, wait);
+        }
+      },
+      flush() {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        if (hasPending) fire();
+      },
+      cancel() {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        pending = null;
+        hasPending = false;
+      },
+    };
+  }
+
+  // Drag and camera are throttled to ~30 updates/s; the release and a trailing
+  // camera flush are sent immediately.
+  const EMIT_INTERVAL_MS = 33;
+  const moveThrottle = throttle(EMIT_INTERVAL_MS, (op) => emit(op));
+  const cameraThrottle = throttle(EMIT_INTERVAL_MS, (camera) => sendCamera(camera));
 
   // Throttled cursor sharing: ~25 updates/s is smooth without flooding the
   // transport. The cursor is in world coordinates, so it pans and zooms with
@@ -276,7 +331,21 @@ export function createRenderer(svg, options = {}) {
 
   function emitMove(id, event, final) {
     const world = toWorld(event.clientX, event.clientY);
-    emit({ type: 'move', id, x: world.x + drag.offsetX, y: world.y + drag.offsetY, final: !!final });
+    const op = {
+      type: 'move',
+      id,
+      x: world.x + drag.offsetX,
+      y: world.y + drag.offsetY,
+      final: !!final,
+    };
+    if (final) {
+      // The release is authoritative: drop any throttled intermediate and send
+      // the exact final position.
+      moveThrottle.cancel();
+      emit(op);
+    } else {
+      moveThrottle.push(op);
+    }
   }
 
   function startDrag(id, event) {
@@ -406,6 +475,10 @@ export function createRenderer(svg, options = {}) {
       pan = null;
       svg.style.cursor = '';
     }
+    // Paint the true final state: flush a trailing camera update (and any move
+    // that was throttled without a final).
+    moveThrottle.flush();
+    cameraThrottle.flush();
   }
   svg.addEventListener('pointerup', endPointer);
   svg.addEventListener('pointercancel', endPointer);
@@ -445,6 +518,17 @@ export function createRenderer(svg, options = {}) {
     emitCamera({ x: cam.x, y: cam.y, zoom: cam.zoom * factor });
   }
 
+  // Fit the whole world (including the right-edge Bank) into the viewport,
+  // centred on the world centre, with a clamped zoom. Used on first paint when
+  // there is no saved document. Sent immediately (not throttled) so the board
+  // is correct from the first frame.
+  function fitToWorld() {
+    const zoom = clampZoom(Math.min(view.w / WORLD.width, view.h / WORLD.height));
+    const camera = { x: WORLD.width / 2, y: WORLD.height / 2, zoom };
+    sendCamera(camera);
+    return camera;
+  }
+
   let observer = null;
   if (typeof ResizeObserver !== 'undefined') {
     observer = new ResizeObserver(measure);
@@ -455,6 +539,7 @@ export function createRenderer(svg, options = {}) {
     svg,
     render,
     measure,
+    fitToWorld,
     zoomBy,
     setPresence,
     getCamera: currentCamera,
@@ -462,6 +547,8 @@ export function createRenderer(svg, options = {}) {
     toWorld,
     destroy() {
       observer?.disconnect();
+      moveThrottle.cancel();
+      cameraThrottle.cancel();
     },
   };
 }

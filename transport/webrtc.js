@@ -152,12 +152,13 @@ export function createWebRtcTransport(options = {}) {
     role,
     supported,
     setHandlers(handlers = {}) {
-      onMessage = handlers.onMessage || null;
-      onStatus = handlers.onStatus || null;
-      if (handlers.onError) onError = handlers.onError;
-    },
-    set onError(fn) {
-      onError = fn;
+      // Error reporting uses the *same* mechanism as onMessage/onStatus:
+      // `setHandlers({ onError })`. Handlers merge, so the hub can wire
+      // messages/status first and the app can add `onError` afterwards without
+      // clearing them. There is deliberately no separate `onError` property.
+      if ('onMessage' in handlers) onMessage = handlers.onMessage || null;
+      if ('onStatus' in handlers) onStatus = handlers.onStatus || null;
+      if ('onError' in handlers) onError = handlers.onError || null;
     },
     start() {
       if (!supported) emitStatus('unavailable');

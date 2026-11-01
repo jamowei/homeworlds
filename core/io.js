@@ -16,11 +16,8 @@
 
 import {
   createDocument,
-  isKnownId,
-  isValidPiece,
   isValidCamera,
-  clampX,
-  clampY,
+  normalisePiece,
   clampZoom,
 } from './state.js';
 
@@ -68,22 +65,11 @@ export function importDocument(json, { fallbackGameId = 'local' } = {}) {
   if (data.pieces != null) {
     if (typeof data.pieces !== 'object' || Array.isArray(data.pieces)) return null;
     for (const [id, piece] of Object.entries(data.pieces)) {
-      if (!isValidPiece(piece)) continue;
-      if (piece.id !== id || !isKnownId(id)) continue;
-      const known = base.pieces[id];
-      // Identity is immutable, exactly as on the sync path.
-      if (!known || piece.color !== known.color || piece.size !== known.size) continue;
-      base.pieces[id] = {
-        id,
-        color: piece.color,
-        size: piece.size,
-        kind: piece.kind,
-        x: clampX(piece.x),
-        y: clampY(piece.y),
-        rotation: piece.rotation,
-        version: Number(piece.version),
-        by: typeof piece.by === 'string' ? piece.by : '',
-      };
+      if (!piece || piece.id !== id) continue;
+      // The same normaliser the sync reducer uses: known id, immutable
+      // identity, valid kind/rotation, finite clamped coordinates.
+      const normalised = normalisePiece(piece, base.pieces[id]);
+      if (normalised) base.pieces[id] = normalised;
     }
   }
 

@@ -102,3 +102,19 @@ test('the store works with no storage at all (Node default)', () => {
   assert.equal(store.saveDocument({ gameId: 'g1', camera: { zoom: 1 } }), false);
   assert.equal(store.lastGameId(), null);
 });
+
+test('preferences round-trip through the same safe storage seam', () => {
+  const storage = memoryStorage();
+  const store = createStore({ storage });
+  assert.equal(store.getPreference('hw-name'), null, 'nothing stored yet');
+  assert.equal(store.setPreference('hw-name', 'Ada'), true);
+  assert.equal(store.getPreference('hw-name'), 'Ada');
+  assert.equal(storage.map.get('hw-name'), 'Ada', 'written plainly under the key');
+});
+
+test('a throwing backend degrades safely for preferences too', () => {
+  const store = createStore({ storage: throwingStorage() });
+  assert.equal(store.getPreference('hw-name'), null);
+  assert.equal(store.setPreference('hw-name', 'Ada'), false);
+  assert.doesNotThrow(() => store.getPreference('hw-name'));
+});

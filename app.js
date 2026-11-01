@@ -9,8 +9,10 @@ import {
   createDocument,
   applyMessage,
   buildCameraMessage,
+  buildFlipMessage,
   buildPieceMessage,
   buildResetMessage,
+  buildRotateMessage,
   messageId,
   mergeDocuments,
 } from './core/state.js';
@@ -38,27 +40,22 @@ const store = createStore();
 // --- Identity -----------------------------------------------------------
 
 const nameInput = $('player-name');
-const savedName = safeGetItem(NAME_KEY);
+const savedName = store.getPreference(NAME_KEY);
 if (nameInput && savedName) nameInput.value = savedName;
 
-function safeGetItem(key) {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
+// The single place the name field is read. `ownName` falls back to "Gast" for
+// presence labels; `requireName` refuses a blank name so creating or joining a
+// game is never anonymous (the field still suggests "Gast" as its value).
+function readName() {
+  return (nameInput?.value || '').trim();
 }
-function safeSetItem(key, value) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    /* ignore */
-  }
+function ownName() {
+  return readName() || 'Gast';
 }
-
 function requireName() {
-  const name = (nameInput?.value || '').trim() || 'Gast';
-  safeSetItem(NAME_KEY, name);
+  if (!readName()) return null;
+  const name = ownName();
+  store.setPreference(NAME_KEY, name);
   if (nameInput) nameInput.value = name;
   return name;
 }
@@ -70,7 +67,8 @@ let gameId = requestedGameId || store.lastGameId() || 'local';
 store.rememberGameId(gameId);
 
 const saved = store.loadDocument(gameId);
-let doc = saved && saved.pieces && saved.camera ? saved : createDocument(gameId);
+const restored = saved && saved.pieces && saved.camera ? saved : null;
+let doc = restored || createDocument(gameId);
 
 const renderer = createRenderer(svg, { onOperation: handleOperation });
 
@@ -152,13 +150,13 @@ function onConnected(transport) {
   // triggers one in return, so the exchange cannot loop.
   if (transport && syncedTransports.has(transport)) return;
   if (transport) syncedTransports.add(transport);
-  hub.send({ type: 'hello', id: `${PEER_ID}-hello-${Math.random().toString(36).slice(2)}`, by: PEER_ID, name: requireName() });
+  hub.send({ type: 'hello', id: messageId(), by: PEER_ID, name: ownName() });
   sendSync();
 }
 
 // Send the whole local document so the two boards can be merged per piece.
 function sendSync() {
-  hub.send({ type: 'sync', id: `${PEER_ID}-sync-${Math.random().toString(36).slice(2)}`, by: PEER_ID, document: doc });
+  hub.send({ type: 'sync', id: messageId(), by: PEER_ID, document: doc });
 }
 
 function dispatch(message) {
@@ -174,13 +172,13 @@ function receiveRemote(message) {
     if (!peers.has(message.by) && !peers.register(message.by)) {
       // Exactly two players: reject and ignore a third.
       rejectedPeers.add(message.by);
-      hub.send({ type: 'reject', id: `${PEER_ID}-reject-${message.by}`, by: PEER_ID });
+      hub.send({ type: 'reject', id: messageId(), by: PEER_ID });
       return;
     }
     if (message.name) opponentName = message.name;
     updateStatus();
     // Answer once so the other side also learns our name, without looping.
-    hub.send({ type: 'hello-ack', id: messageId(), by: PEER_ID, name: requireName() });
+    hub.send({ type: 'hello-ack', id: messageId(), by: PEER_ID, name: ownName() });
     return;
   }
   if (message.type === 'hello-ack') {
@@ -208,13 +206,17 @@ function receiveRemote(message) {
   if (next !== doc) setDocument(next);
 }
 
-function switchGame(nextGameId) {
+function switchGame(nextGameId, { fresh = false } = {}) {
   if (!nextGameId || nextGameId === gameId) return;
   gameId = nextGameId;
   store.rememberGameId(gameId);
-  doc = { ...doc, gameId };
   useBroadcast(gameId);
-  scheduleSave();
+  // A brand-new game starts from the deterministic initial table; joining an
+  // existing game resumes its saved board when there is one. Always go through
+  // `setDocument` so the renderer and autosave stay in sync.
+  const savedDoc = fresh ? null : store.loadDocument(gameId);
+  const next = savedDoc && savedDoc.pieces && savedDoc.camera ? savedDoc : createDocument(gameId);
+  setDocument(next);
 }
 
 // --- Presence -----------------------------------------------------------
@@ -222,10 +224,6 @@ function switchGame(nextGameId) {
 // Transient opponent cursor and drag highlight. Presence rides the same hub as
 // board changes but is never fed through `applyMessage`: it does not mutate the
 // document.
-
-function ownName() {
-  return (nameInput?.value || '').trim() || 'Gast';
-}
 
 function sendPresence(message) {
   hub.send({ ...message, id: messageId(), by: PEER_ID, name: ownName() });
@@ -245,6 +243,27 @@ function applyPresence(message) {
 // --- Handshake UI -------------------------------------------------------
 
 let webrtc = null;
+
+// WebRTC needs a secure context and browser support. On `file://` the warning
+// is shown and peer connections are refused outright (BroadcastChannel tab sync
+// and JSON export/import keep working). Returns null when WebRTC is usable.
+function webRtcBlockReason() {
+  if (location.protocol === 'file:') {
+    return 'Peer-Sync (WebRTC) benötigt HTTPS. Öffne die Seite über eine HTTPS-Adresse.';
+  }
+  if (!isWebRtcSupported()) {
+    return 'Dieser Browser kann kein WebRTC – Peer-Verbindungen sind nicht möglich.';
+  }
+  return null;
+}
+
+// Name is mandatory before creating or joining: returns true (and shows the
+// error) when the field is blank, so the caller can bail out.
+function missingName() {
+  if (requireName()) return false;
+  showError('gate-error', 'Bitte gib zuerst deinen Namen ein.');
+  return true;
+}
 
 function baseUrl() {
   return location.origin + location.pathname + location.search;
@@ -304,8 +323,9 @@ function teardownWebRtc() {
 function attachWebRtc(transport) {
   teardownWebRtc();
   webrtc = transport;
-  transport.onError = (event) => console.warn('WebRTC-Fehler', event);
   hub.add(transport);
+  // Errors use the same handler mechanism as messages/status (setHandlers).
+  transport.setHandlers({ onError: (event) => console.warn('WebRTC-Fehler', event) });
   return transport;
 }
 
@@ -316,9 +336,10 @@ function attachWebRtc(transport) {
 // saved board) and only rebuilds the transport; on connect the peers merge.
 
 async function reconnect() {
-  requireName();
-  if (!isWebRtcSupported()) {
-    showError('gate-error', 'Dieser Browser kann kein WebRTC – Peer-Verbindungen sind nicht möglich.');
+  if (missingName()) return;
+  const block = webRtcBlockReason();
+  if (block) {
+    showError('gate-error', block);
     return;
   }
   showError('gate-error', '');
@@ -339,13 +360,14 @@ async function reconnect() {
 }
 
 async function createGame() {
-  requireName();
-  if (!isWebRtcSupported()) {
-    showError('gate-error', 'Dieser Browser kann kein WebRTC – Peer-Verbindungen sind nicht möglich.');
+  if (missingName()) return;
+  const block = webRtcBlockReason();
+  if (block) {
+    showError('gate-error', block);
     return;
   }
   showError('gate-error', '');
-  switchGame(newGameId());
+  switchGame(newGameId(), { fresh: true });
   const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
   try {
     const offer = await transport.createOffer();
@@ -363,11 +385,12 @@ async function createGame() {
 }
 
 async function joinAsGuest(offerBlob) {
-  if (!isWebRtcSupported()) {
-    showError('gate-error', 'Dieser Browser kann kein WebRTC – Peer-Verbindungen sind nicht möglich.');
+  if (missingName()) return;
+  const block = webRtcBlockReason();
+  if (block) {
+    showError('gate-error', block);
     return;
   }
-  requireName();
   switchGame(offerBlob.gameId);
   const transport = attachWebRtc(createWebRtcTransport({ role: 'guest', gameId: offerBlob.gameId }));
   try {
@@ -386,6 +409,11 @@ async function joinAsGuest(offerBlob) {
 }
 
 async function acceptReplyText(text) {
+  const block = webRtcBlockReason();
+  if (block) {
+    showError('handshake-error', block);
+    return;
+  }
   const blob = decodeAnyBlob(text);
   if (!blob) {
     showError('handshake-error', 'Das ist kein gültiger Antwort-Code.');
@@ -409,7 +437,12 @@ async function joinFromText(text) {
     showError('gate-error', 'Das ist kein gültiger Einladungs-Code.');
     return;
   }
-  requireName();
+  const block = webRtcBlockReason();
+  if (block) {
+    showError('gate-error', block);
+    return;
+  }
+  if (missingName()) return;
   if (blob.role === 'guest') {
     await acceptReplyText(text);
     return;
@@ -473,26 +506,20 @@ function handleOperation(op) {
     case 'move':
       dispatch(buildPieceMessage(doc, op.id, { x: op.x, y: op.y }, PEER_ID));
       break;
-    case 'rotate': {
-      const piece = doc.pieces[op.id];
-      if (!piece || piece.kind !== 'ship') break;
-      dispatch(buildPieceMessage(doc, op.id, { rotation: piece.rotation === 0 ? 180 : 0 }, PEER_ID));
+    case 'rotate':
+      dispatch(buildRotateMessage(doc, op.id, PEER_ID));
       break;
-    }
-    case 'flip': {
-      const piece = doc.pieces[op.id];
-      if (!piece) break;
-      dispatch(buildPieceMessage(doc, op.id, { kind: piece.kind === 'ship' ? 'star' : 'ship' }, PEER_ID));
+    case 'flip':
+      dispatch(buildFlipMessage(doc, op.id, PEER_ID));
       break;
-    }
     case 'camera':
       dispatch(buildCameraMessage(doc, op.camera, PEER_ID));
       break;
     case 'cursor':
-      sendPresence(buildCursorMessage({ x: op.cursor?.x, y: op.cursor?.y }));
+      sendPresence(buildCursorMessage(op.cursor?.x, op.cursor?.y));
       break;
     case 'drag':
-      sendPresence(buildDragMessage({ pieceId: op.phase === 'end' ? null : op.id }));
+      sendPresence(buildDragMessage(op.phase === 'end' ? null : op.id));
       break;
     default:
       break;
@@ -502,7 +529,11 @@ function handleOperation(op) {
 // --- Init ---------------------------------------------------------------
 
 renderer.render(doc);
-requestAnimationFrame(() => renderer.measure());
+requestAnimationFrame(() => {
+  renderer.measure();
+  // No saved board: fit the whole world (Bank included) on screen immediately.
+  if (!restored) renderer.fitToWorld();
+});
 
 addEventListener('pagehide', flushSave);
 
@@ -554,8 +585,9 @@ if (location.protocol === 'file:') {
   if (warn) warn.hidden = false;
 }
 
-// A browser without WebRTC can still use the board, the tab sync and JSON.
-if (!isWebRtcSupported()) {
+// A browser without WebRTC — or a page opened from `file://` — can still use
+// the board, the tab sync and JSON, but not peer connections.
+if (webRtcBlockReason()) {
   const notice = $('gate-webrtc');
   if (notice) notice.hidden = false;
 }
@@ -564,10 +596,14 @@ if (!isWebRtcSupported()) {
 if (location.hash && location.hash.includes('hw=')) {
   const blob = decodeFragment(location.hash);
   showGate(false);
-  if (blob && blob.role === 'guest') {
-    acceptReplyText(location.hash);
-  } else if (blob) {
-    joinAsGuest(blob);
+  // On `file://` (or without WebRTC) the warning is shown and no peer
+  // connection is attempted; tab sync and JSON exchange still work.
+  if (!webRtcBlockReason()) {
+    if (blob && blob.role === 'guest') {
+      acceptReplyText(location.hash);
+    } else if (blob) {
+      joinAsGuest(blob);
+    }
   }
 } else {
   showGate(!savedName);
