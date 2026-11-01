@@ -315,25 +315,35 @@ export function resetDocument(doc, version, by = '') {
   return fresh;
 }
 
+// Merge two whole documents after a reconnect. Every conflict is resolved the
+// same way on both peers, without asking the user: per piece, the newest
+// `version` wins and equal versions are tie-broken by peer id. The camera and
+// the Reset baselines follow the same last-write-wins rule. The local document
+// always keeps its own game identity, and a remote missing pieces or a camera
+// (a corrupt or partial sync) can never break the local board.
 export function mergeDocuments(local, remote) {
   if (!local) return remote;
   if (!remote) return local;
-  const out = { ...local, pieces: { ...local.pieces } };
+  const remotePieces = remote.pieces && typeof remote.pieces === 'object' ? remote.pieces : {};
+  const localPieces = local.pieces && typeof local.pieces === 'object' ? local.pieces : {};
+  const out = { ...local, pieces: { ...localPieces } };
 
   if (isNewer(remote.resetVersion, remote.resetBy, local.resetVersion, local.resetBy)) {
     out.resetVersion = remote.resetVersion;
     out.resetBy = remote.resetBy;
   }
 
-  for (const id of Object.keys(local.pieces)) {
-    const mine = local.pieces[id];
-    const theirs = remote.pieces[id];
+  for (const id of Object.keys(localPieces)) {
+    const mine = localPieces[id];
+    const theirs = remotePieces[id];
     if (!theirs) continue;
     out.pieces[id] = isNewer(theirs.version, theirs.by, mine.version, mine.by) ? theirs : mine;
   }
 
-  if (isNewer(remote.camera.version, remote.camera.by, local.camera.version, local.camera.by)) {
-    out.camera = remote.camera;
+  const localCamera = local.camera;
+  const remoteCamera = remote.camera;
+  if (localCamera && remoteCamera && isNewer(remoteCamera.version, remoteCamera.by, localCamera.version, localCamera.by)) {
+    out.camera = remoteCamera;
   }
 
   return out;

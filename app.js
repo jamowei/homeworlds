@@ -12,6 +12,7 @@ import {
   buildPieceMessage,
   buildResetMessage,
   messageId,
+  mergeDocuments,
 } from './core/state.js';
 import { createRenderer } from './render/svg.js';
 import { buildCursorMessage, buildDragMessage, readPresence } from './presence/messages.js';
@@ -21,6 +22,7 @@ import { createBroadcastTransport } from './transport/broadcast.js';
 import { createPeerRegistry } from './transport/peers.js';
 import { createWebRtcTransport, isWebRtcSupported } from './transport/webrtc.js';
 import { encodeFragment, decodeFragment, encodePaste, decodePaste } from './signalling/codec.js';
+import { exportDocument, importDocument } from './core/io.js';
 
 const SAVE_DEBOUNCE_MS = 300;
 const NAME_KEY = 'hw-name';
@@ -94,6 +96,9 @@ let opponentName = null;
 const transportStatus = new Map();
 const peers = createPeerRegistry({ self: PEER_ID, limit: 2 });
 const rejectedPeers = new Set();
+// Transports that have already sent their one `sync` for this connection. It is
+// cleared on disconnect so a reconnected transport syncs again.
+const syncedTransports = new Set();
 
 const hub = createHub({
   onMessage: receiveRemote,
@@ -101,6 +106,7 @@ const hub = createHub({
     transportStatus.set(transport, status);
     updateStatus();
     if (status === 'connected') onConnected(transport);
+    else if (status === 'disconnected' || status === 'closed') syncedTransports.delete(transport);
   },
 });
 
@@ -136,9 +142,19 @@ function updateStatus() {
   statusEl.textContent = text;
 }
 
-function onConnected() {
+function onConnected(transport) {
   hideHandshake();
+  // One hello + one document sync per connection. Receiving a `sync` never
+  // triggers one in return, so the exchange cannot loop.
+  if (transport && syncedTransports.has(transport)) return;
+  if (transport) syncedTransports.add(transport);
   hub.send({ type: 'hello', id: `${PEER_ID}-hello-${Math.random().toString(36).slice(2)}`, by: PEER_ID, name: requireName() });
+  sendSync();
+}
+
+// Send the whole local document so the two boards can be merged per piece.
+function sendSync() {
+  hub.send({ type: 'sync', id: `${PEER_ID}-sync-${Math.random().toString(36).slice(2)}`, by: PEER_ID, document: doc });
 }
 
 function dispatch(message) {
@@ -163,6 +179,14 @@ function receiveRemote(message) {
   }
   if (message.type === 'reject') return;
   if (message.by && rejectedPeers.has(message.by)) return;
+  // A reconnect sync carries a whole document; merge it per piece by newest
+  // version (tie-broken by peer id) so offline divergence resolves itself.
+  if (message.type === 'sync') {
+    if (!message.by || message.by === PEER_ID || !message.document) return;
+    setDocument(mergeDocuments(doc, message.document));
+    return;
+  }
+  // Presence never mutates the document: it only updates the opponent overlay.
   if (message.type === 'cursor' || message.type === 'drag') {
     applyPresence(message);
     return;
@@ -253,11 +277,52 @@ function newGameId() {
   return (globalThis.crypto?.randomUUID?.() || `g-${Math.random().toString(36).slice(2)}`).slice(0, 16);
 }
 
+// Drop the current WebRTC transport cleanly before building a new one. Closing
+// it removes it from the hub, so a stale channel can never deliver messages
+// into the fresh connection.
+function teardownWebRtc() {
+  if (!webrtc) return;
+  const old = webrtc;
+  webrtc = null;
+  syncedTransports.delete(old);
+  hub.remove(old);
+}
+
 function attachWebRtc(transport) {
+  teardownWebRtc();
   webrtc = transport;
   transport.onError = (event) => console.warn('WebRTC-Fehler', event);
   hub.add(transport);
   return transport;
+}
+
+// --- Reconnect (ticket 11) ----------------------------------------------
+//
+// WebRTC cannot silently reconnect, so resuming the *same* game needs a fresh
+// invite/reply exchange. This keeps the current gameId (and therefore the
+// saved board) and only rebuilds the transport; on connect the peers merge.
+
+async function reconnect() {
+  requireName();
+  if (!isWebRtcSupported()) {
+    showError('gate-error', 'Dieser Browser kann kein WebRTC – Peer-Verbindungen sind nicht möglich.');
+    return;
+  }
+  showError('gate-error', '');
+  showGate(false);
+  const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
+  try {
+    const offer = await transport.createOffer();
+    showHandshake({
+      title: 'Verbindung erneuern',
+      help: 'Dieselbe Partie: Sende diesen neuen Einladungs-Link und füge danach die Antwort wieder unten ein.',
+      link: linkFor(offer),
+      blob: encodePaste(offer),
+      reply: true,
+    });
+  } catch (error) {
+    showError('gate-error', error?.message || 'Verbindung konnte nicht erneuert werden.');
+  }
 }
 
 async function createGame() {
@@ -339,6 +404,55 @@ async function joinFromText(text) {
   await joinAsGuest(blob);
 }
 
+// --- JSON export / import fallback (ticket 13) --------------------------
+//
+// The escape hatch when WebRTC is impossible: a pure JSON blob hand-copied
+// through any chat. It never requires a peer connection. Kept in its own
+// section so sibling tickets can merge without touching it.
+
+function exportBoard() {
+  const json = exportDocument(doc);
+  const out = $('export-output');
+  if (out) out.value = json;
+  const copy = navigator.clipboard?.writeText?.(json);
+  if (copy) {
+    copy.catch(() => out?.select());
+  } else {
+    out?.select();
+  }
+  showError('import-error', '');
+}
+
+function downloadBoard() {
+  const out = $('export-output');
+  const json = out?.value || exportDocument(doc);
+  if (out && !out.value) out.value = json;
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `homeworlds-${gameId}.json`;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function importBoard() {
+  const raw = $('import-input')?.value || '';
+  const restored = importDocument(raw, { fallbackGameId: gameId });
+  if (!restored) {
+    showError('import-error', 'Ungültiges Board-JSON. Bitte den Code vollständig einfügen.');
+    return;
+  }
+  showError('import-error', '');
+  // Adopt the imported identity so a re-export keeps matching the opponent.
+  if (restored.gameId && restored.gameId !== gameId) {
+    gameId = restored.gameId;
+    store.rememberGameId(gameId);
+    useBroadcast(gameId);
+  }
+  setDocument(restored);
+}
+
 // --- Local operations ---------------------------------------------------
 
 function handleOperation(op) {
@@ -391,10 +505,16 @@ $('reset')?.addEventListener('click', () => {
 });
 
 $('create-game')?.addEventListener('click', () => createGame());
+$('reconnect')?.addEventListener('click', () => reconnect());
 $('join-game')?.addEventListener('click', () => joinFromText($('join-input')?.value));
 $('accept-reply')?.addEventListener('click', () => acceptReplyText($('reply-input')?.value));
 $('gate-skip')?.addEventListener('click', () => showGate(false));
 $('handshake-close')?.addEventListener('click', () => hideHandshake());
+
+// ticket 13: JSON export/import fallback
+$('export-board')?.addEventListener('click', () => exportBoard());
+$('download-board')?.addEventListener('click', () => downloadBoard());
+$('import-board')?.addEventListener('click', () => importBoard());
 
 $('copy-link')?.addEventListener('click', async () => {
   const value = $('handshake-link')?.value || '';
@@ -411,6 +531,21 @@ $('copy-link')?.addEventListener('click', async () => {
     $('handshake-link')?.select();
   }
 });
+
+// --- Fallback warnings (ticket 13) --------------------------------------
+
+// Opening the page straight from disk means no secure context: WebRTC needs
+// HTTPS, but same-browser tab sync (BroadcastChannel) and JSON exchange work.
+if (location.protocol === 'file:') {
+  const warn = $('file-warning');
+  if (warn) warn.hidden = false;
+}
+
+// A browser without WebRTC can still use the board, the tab sync and JSON.
+if (!isWebRtcSupported()) {
+  const notice = $('gate-webrtc');
+  if (notice) notice.hidden = false;
+}
 
 // Opening an invite link shows the board immediately and produces a reply.
 if (location.hash && location.hash.includes('hw=')) {

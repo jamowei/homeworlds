@@ -4,10 +4,21 @@
 
 **Blocked by:** 10 (WebRTC peer sync)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] After a disconnect, a fresh invite/reply exchange reconnects the same game
-- [ ] On reconnect, the two boards merge per-piece by newest version, tie-broken by peer id
-- [ ] Offline divergence resolves automatically with no user decision
-- [ ] The gameId is preserved across reload and reconnect
-- [ ] Tests cover merge (newest wins, tiebreak, equal-version divergence)
+- [x] After a disconnect, a fresh invite/reply exchange reconnects the same game
+- [x] On reconnect, the two boards merge per-piece by newest version, tie-broken by peer id
+- [x] Offline divergence resolves automatically with no user decision
+- [x] The gameId is preserved across reload and reconnect
+- [x] Tests cover merge (newest wins, tiebreak, equal-version divergence)
+
+## Comments
+
+Implemented on the integration branch. On a transport reporting `connected`,
+each peer sends its whole document once (`sync`); the receiver merges it with
+`mergeDocuments` (per-piece newest-version, peer-id tiebreak) and never replies,
+so there is no sync loop. A `Verbindung erneuern` control rebuilds the WebRTC
+transport with a fresh invite/reply exchange while keeping the same `gameId`,
+tearing the old transport down cleanly; reload returns to the same game via the
+remembered id. Tests cover newest-wins, per-piece independence, tiebreak both
+ways, deterministic equal-version divergence and tolerating a partial remote.
