@@ -81,6 +81,119 @@
 .btn:hover { border-color: var(--blue); }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn.danger:hover { border-color: var(--red); }
+.btn.primary { border-color: var(--green); color: var(--green); }
+
+.linklike {
+  display: block;
+  margin: 0.75rem auto 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.field {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.field input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 20, 32, 0.72);
+  backdrop-filter: blur(3px);
+}
+:root[data-theme="light"] .gate { background: rgba(238, 241, 248, 0.78); }
+
+.gate-card {
+  width: min(420px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+}
+.gate-card h2 { font-size: 1.25rem; margin-bottom: 0.4rem; }
+.gate-help { color: var(--muted); font-size: 0.88rem; margin-bottom: 0.9rem; }
+.gate-sep {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 1rem 0 0.6rem;
+}
+.gate-error, .handshake-error {
+  color: var(--red);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.6rem;
+}
+
+.gate-card textarea,
+.handshake textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.5rem 0.65rem;
+  resize: vertical;
+  margin-bottom: 0.6rem;
+}
+
+.handshake {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.75rem;
+}
+.handshake-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.handshake-head h2 { font-size: 1.05rem; }
+.handshake-help { color: var(--muted); font-size: 0.85rem; margin: 0.35rem 0 0.6rem; }
+.link-row { display: flex; gap: 0.5rem; }
+.link-row input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.45rem 0.6rem;
+}
+.handshake .note { margin: 0.6rem 0 0.3rem; }
 
 .board-frame {
   position: relative;

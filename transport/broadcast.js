@@ -35,7 +35,7 @@ export function createBroadcastTransport(name) {
       if (onMessage) onMessage(event.data);
     });
     channel.addEventListener('messageerror', () => {});
-    emitStatus('connected');
+    emitStatus('available');
   }
 
   return {
