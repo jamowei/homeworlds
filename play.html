@@ -47,8 +47,6 @@
   <div class="play-toolbar" id="toolbar">
     <span class="status" id="status" data-state="offline">Nicht verbunden</span>
     <span class="spacer"></span>
-    <button type="button" class="btn" id="zoom-out" aria-label="Herauszoomen">−</button>
-    <button type="button" class="btn" id="zoom-in" aria-label="Hineinzoomen">+</button>
     <button type="button" class="btn" id="reconnect">Verbindung erneuern</button>
     <button type="button" class="btn danger" id="reset">Zurücksetzen</button>
   </div>
@@ -56,7 +54,6 @@
   <details class="handshake" id="handshake" hidden>
     <summary>
       <h2 id="handshake-title">Einladung teilen</h2>
-      <button type="button" class="btn" id="handshake-close">Ausblenden</button>
     </summary>
     <p class="handshake-help" id="handshake-help"></p>
     <div class="link-row">
@@ -72,6 +69,10 @@
     </div>
     <p class="handshake-error" id="handshake-error" hidden></p>
   </details>
+
+  <div class="board-frame">
+    <svg id="board" class="board" role="img" aria-label="Homeworlds-Spielbrett"></svg>
+  </div>
 
   <!-- ticket 13: JSON export/import fallback (no peer connection required) -->
   <details class="fallback" id="fallback">
@@ -90,10 +91,6 @@
     <button type="button" class="btn primary" id="import-board">Importieren</button>
     <p class="fallback-error" id="import-error" hidden></p>
   </details>
-
-  <div class="board-frame">
-    <svg id="board" class="board" role="img" aria-label="Homeworlds-Spielbrett"></svg>
-  </div>
 </div>
 
 <script>

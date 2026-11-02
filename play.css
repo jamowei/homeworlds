@@ -196,7 +196,6 @@
 .handshake[open] > summary::before,
 .fallback[open] > summary::before { transform: rotate(90deg); }
 .handshake > summary h2 { font-size: 1.05rem; }
-.handshake > summary .btn { margin-left: auto; }
 .handshake-help { color: var(--muted); font-size: 0.85rem; margin: 0.35rem 0 0.6rem; }
 .link-row { display: flex; gap: 0.5rem; }
 .link-row input {

@@ -538,9 +538,6 @@ requestAnimationFrame(() => {
 
 addEventListener('pagehide', flushSave);
 
-$('zoom-in')?.addEventListener('click', () => renderer.zoomBy(1.25));
-$('zoom-out')?.addEventListener('click', () => renderer.zoomBy(0.8));
-
 $('reset')?.addEventListener('click', () => {
   const confirmed = window.confirm(
     'Wirklich zurücksetzen? Alle 36 Steine gehen in die Bank zurück und der Gegner sieht denselben Zustand.',
@@ -554,11 +551,6 @@ $('reconnect')?.addEventListener('click', () => reconnect());
 $('join-game')?.addEventListener('click', () => joinFromText($('join-input')?.value));
 $('accept-reply')?.addEventListener('click', () => acceptReplyText($('reply-input')?.value));
 $('gate-skip')?.addEventListener('click', () => showGate(false));
-$('handshake-close')?.addEventListener('click', (event) => {
-  // The button sits inside the <summary>: stop it from also toggling the fold.
-  event.preventDefault();
-  hideHandshake();
-});
 
 // ticket 13: JSON export/import fallback
 $('export-board')?.addEventListener('click', () => exportBoard());
