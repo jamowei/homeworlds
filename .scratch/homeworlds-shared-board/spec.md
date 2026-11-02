@@ -101,8 +101,11 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 61. As a player, I want to import a board JSON, so that I can load my opponent's table.
 62. As a player, I want invalid or corrupt sync messages to be rejected safely, so that one bad byte cannot break my board.
 
+**Help**
+63. As a new player, I want an in-app "Steuerung" dialog explaining every action, so that I can start playing without being told.
+
 **Non-goals that shape UX**
-63. As a player, I want it to be obvious that this app does not enforce rules, so that I know the humans are responsible for legality.
+64. As a player, I want it to be obvious that this app does not enforce rules, so that I know the humans are responsible for legality.
 
 ## Implementation Decisions
 
