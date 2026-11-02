@@ -380,11 +380,11 @@ export function createRenderer(svg, options = {}) {
       offsetY: piece.y - world.y,
       longPressTimer: null,
     };
-    draggingId = id;
-    svg.setPointerCapture?.(event.pointerId);
-    render(board);
+    // Pointer capture is deliberately NOT taken here: capturing on press would
+    // retarget the derived mouse events (including dblclick) to the <svg>, so a
+    // double-click could no longer be resolved to the piece under it. Capture
+    // is taken once the gesture actually becomes a drag (see pointermove).
     emit({ type: 'drag', id, phase: 'start' });
-
     // Touch: holding still flips the piece after a moment.
     if (event.pointerType === 'touch') {
       drag.longPressTimer = setTimeout(() => {
@@ -454,6 +454,12 @@ export function createRenderer(svg, options = {}) {
       if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > TAP_MOVE_LIMIT) {
         drag.moved = true;
         if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
+        // Only now rebuild the pieces: a press that never moves must not
+        // replace the node, or a native double-click (flip) can never fire.
+        // Capture too, so the drag keeps tracking if the pointer leaves the board.
+        svg.setPointerCapture?.(event.pointerId);
+        draggingId = drag.id;
+        render(board);
       }
       if (drag.moved) emitMove(drag.id, event, false);
       return;
@@ -471,7 +477,8 @@ export function createRenderer(svg, options = {}) {
     if (activePointers.size < 2) pinch = null;
     if (drag && event.pointerId === drag.pointerId) {
       if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
-      if (drag.moved) {
+      const moved = drag.moved;
+      if (moved) {
         emitMove(drag.id, event, true);
       } else if (drag.pointerType === 'touch') {
         // A still tap: a second one shortly after rotates the piece.
@@ -486,7 +493,9 @@ export function createRenderer(svg, options = {}) {
       emit({ type: 'drag', id: drag.id, phase: 'end' });
       drag = null;
       draggingId = null;
-      render(board);
+      // A press that never moved left the DOM untouched; re-rendering here
+      // would replace the node and rob the browser of its double-click.
+      if (moved) render(board);
     }
     if (pan && event.pointerId === pan.pointerId) {
       pan = null;
