@@ -286,6 +286,7 @@ function showHandshake(config) {
   const panel = $('handshake');
   if (!panel) return;
   panel.hidden = false;
+  if ('open' in panel) panel.open = true;
   $('handshake-title').textContent = config.title;
   $('handshake-help').textContent = config.help || '';
   $('handshake-link').value = config.link || '';
@@ -553,7 +554,11 @@ $('reconnect')?.addEventListener('click', () => reconnect());
 $('join-game')?.addEventListener('click', () => joinFromText($('join-input')?.value));
 $('accept-reply')?.addEventListener('click', () => acceptReplyText($('reply-input')?.value));
 $('gate-skip')?.addEventListener('click', () => showGate(false));
-$('handshake-close')?.addEventListener('click', () => hideHandshake());
+$('handshake-close')?.addEventListener('click', (event) => {
+  // The button sits inside the <summary>: stop it from also toggling the fold.
+  event.preventDefault();
+  hideHandshake();
+});
 
 // ticket 13: JSON export/import fallback
 $('export-board')?.addEventListener('click', () => exportBoard());

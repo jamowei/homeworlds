@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Homeworlds: Gemeinsamer Tisch</title>
+<title>Homeworlds</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="play.css">
 </head>
@@ -34,8 +34,7 @@
 
 <div class="play-wrap">
   <header class="play-header">
-    <h1>Gemeinsamer Tisch</h1>
-    <p class="hint">Freies Tabletop ohne Regelprüfung – die Regeln kennt ihr.</p>
+    <h1>Homeworlds</h1>
   </header>
 
   <!-- ticket 13: file:// / HTTPS warning -->
@@ -54,11 +53,11 @@
     <button type="button" class="btn danger" id="reset">Zurücksetzen</button>
   </div>
 
-  <div class="handshake" id="handshake" hidden>
-    <div class="handshake-head">
+  <details class="handshake" id="handshake" hidden>
+    <summary>
       <h2 id="handshake-title">Einladung teilen</h2>
       <button type="button" class="btn" id="handshake-close">Ausblenden</button>
-    </div>
+    </summary>
     <p class="handshake-help" id="handshake-help"></p>
     <div class="link-row">
       <input id="handshake-link" type="text" readonly>
@@ -72,11 +71,11 @@
       <button type="button" class="btn primary" id="accept-reply">Antwort übernehmen</button>
     </div>
     <p class="handshake-error" id="handshake-error" hidden></p>
-  </div>
+  </details>
 
   <!-- ticket 13: JSON export/import fallback (no peer connection required) -->
-  <section class="fallback" id="fallback">
-    <h2>Board als JSON austauschen</h2>
+  <details class="fallback" id="fallback">
+    <summary><h2>Board als JSON austauschen</h2></summary>
     <p class="note">
       Ohne Peer-Verbindung: exportiere dein Board und schicke den JSON-Text per Chat.
       Dein Gegenüber fügt ihn unten ein.
@@ -90,18 +89,10 @@
     <textarea id="import-input" rows="3" placeholder="Board-JSON einfügen"></textarea>
     <button type="button" class="btn primary" id="import-board">Importieren</button>
     <p class="fallback-error" id="import-error" hidden></p>
-  </section>
+  </details>
 
   <div class="board-frame">
     <svg id="board" class="board" role="img" aria-label="Homeworlds-Spielbrett"></svg>
-  </div>
-
-  <div class="bottom-nav">
-    <span class="lbl">Weiterführende Links</span>
-    <ul>
-      <li><a href="index.html">Kurzreferenz</a></li>
-      <li><a href="guide.html">Babamots' Strategie-Guide</a></li>
-    </ul>
   </div>
 </div>
 
