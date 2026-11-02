@@ -1,6 +1,15 @@
 /* play.css — the shared board page. Reuses the colour tokens and theme from
    style.css, but keeps its own layout so the reference pages are untouched. */
 
+/* The `hidden` attribute is the app's single mechanism for toggling overlays
+   (the gate, the handshake, the warnings): app.js sets `.hidden = true/false`.
+   The UA rule `[hidden] { display: none }` loses to any author `display` rule,
+   so `.gate { display: flex }` below would keep a hidden gate on screen. Make
+   `[hidden]` authoritative so the attribute always wins. */
+[hidden] {
+  display: none !important;
+}
+
 .play-body {
   padding: 0;
   min-height: 100vh;
