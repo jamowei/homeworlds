@@ -68,10 +68,6 @@ export function createRenderer(svg, options = {}) {
   let view = { w: svg.clientWidth || 960, h: svg.clientHeight || 640 };
 
   const boundary = el('rect', {
-    x: 0,
-    y: 0,
-    width: WORLD.width,
-    height: WORLD.height,
     class: 'board-boundary',
   });
   const slots = el('g', { class: 'bank-slots' });
@@ -109,7 +105,17 @@ export function createRenderer(svg, options = {}) {
     const cam = board.camera;
     const w = view.w / cam.zoom;
     const h = view.h / cam.zoom;
-    svg.setAttribute('viewBox', `${cam.x - w / 2} ${cam.y - h / 2} ${w} ${h}`);
+    const x = cam.x - w / 2;
+    const y = cam.y - h / 2;
+    svg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+    // The boundary frames the visible board: it tracks the viewBox (the world
+    // region currently on screen) so its edges always sit on the SVG edges,
+    // panning and zooming with the camera. Piece positions are still clamped to
+    // the fixed world extent in core/state.js, which is independent of this.
+    boundary.setAttribute('x', x);
+    boundary.setAttribute('y', y);
+    boundary.setAttribute('width', w);
+    boundary.setAttribute('height', h);
   }
 
   function measure() {
