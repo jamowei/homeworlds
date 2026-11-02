@@ -124,7 +124,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - Piece: `{ id, color, size, kind: 'ship'|'star', x, y, rotation }` where `rotation ∈ {0, 180}` and kind `ship` = triangle, `star` = square.
 - `id` is deterministic and encodes colour/size/copy index (e.g. `red-large-2`), so both peers construct an identical base document without transmitting it.
 - `color ∈ {yellow, green, red, blue}`, `size ∈ {1,2,3}`.
-- Camera: `{ x, y, zoom }`, `zoom ∈ [0.25, 4]`.
+- Camera: `{ x, y, zoom }`, `zoom ∈ [0.25, 1]`.
 - Document also carries `gameId` and metadata; the camera is a separate LWW channel from pieces.
 
 ### Layout (deterministic)
@@ -160,7 +160,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - Triangles: right-click toggles 0°/180°; squares ignore rotation but remember the angle that survives a flip.
 - Double-click flips triangle↔square, anchored at the piece's centre, preserving colour/size; pips bottom-left on both shapes (1/2/3 dots).
 - Free drag, overlap allowed, dragged piece brought to front. No snapping, no true stacking, no multi-select (see Out of Scope).
-- Camera: shared pan+zoom; wheel / +− buttons / pinch; anchored at cursor; ~25%–400%; no independent free-look.
+- Camera: shared pan+zoom; wheel / pinch; anchored at cursor; 25%–100% (current level shown in the toolbar); no independent free-look.
 - Touch: drag = move, **double-tap = rotate**, **long-press = flip**, pinch = zoom, background drag = pan.
 - Presence: opponent cursor, opponent drag highlight, connection status, all labelled with the opponent's name.
 - **Name is mandatory** before creating or joining a game; default suggestion "Gast".
