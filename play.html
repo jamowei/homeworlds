@@ -32,6 +32,39 @@
   </div>
 </div>
 
+<!-- Controls / how to play. Opened from the "Steuerung" button in the toolbar. -->
+<div class="controls-overlay" id="controls" hidden>
+  <div class="controls-card" role="dialog" aria-modal="true" aria-labelledby="controls-title">
+    <div class="controls-head">
+      <h2 id="controls-title">Steuerung</h2>
+      <button type="button" class="btn" id="controls-close">Schließen</button>
+    </div>
+
+    <h3>Steine</h3>
+    <dl class="controls-list">
+      <div><dt>Bewegen</dt><dd>Stein mit der Maus oder dem Finger ziehen.</dd></div>
+      <div><dt>Drehen</dt><dd>Rechtsklick auf ein Schiff – auf dem Touchscreen: Doppeltipp.</dd></div>
+      <div><dt>Umbauen</dt><dd>Doppelklick wechselt zwischen Schiff und Station – auf dem Touchscreen: lange drücken.</dd></div>
+      <div><dt>Zurücksetzen</dt><dd>Knopf „Zurücksetzen“: alle 36 Steine gehen zurück in die Bank.</dd></div>
+    </dl>
+
+    <h3>Ansicht</h3>
+    <dl class="controls-list">
+      <div><dt>Zoomen</dt><dd>Mausrad – auf dem Touchscreen: Zwei-Finger-Geste.</dd></div>
+      <div><dt>Verschieben</dt><dd>Den leeren Hintergrund ziehen.</dd></div>
+    </dl>
+
+    <h3>Verbindung</h3>
+    <dl class="controls-list">
+      <div><dt>Spiel starten</dt><dd>Name eingeben, dann „Neues Spiel erstellen“ oder eine Einladung einfügen.</dd></div>
+      <div><dt>Verbinden</dt><dd>Einladungs-Link teilen; die Antwort des Gegenübers einfügen.</dd></div>
+      <div><dt>Ohne Verbindung</dt><dd>Board als JSON exportieren und per Chat austauschen.</dd></div>
+    </dl>
+
+    <p class="note">Freies Tabletop: Die Regeln kennt ihr – das Brett prüft sie nicht.</p>
+  </div>
+</div>
+
 <div class="play-wrap">
   <header class="play-header">
     <h1>Homeworlds</h1>
@@ -48,6 +81,7 @@
     <span class="status" id="status" data-state="offline">Nicht verbunden</span>
     <span class="zoom" id="zoom-level">Zoom 100%</span>
     <span class="spacer"></span>
+    <button type="button" class="btn" id="controls-open" aria-haspopup="dialog">Steuerung</button>
     <button type="button" class="btn" id="reconnect">Verbindung erneuern</button>
     <button type="button" class="btn danger" id="reset">Zurücksetzen</button>
   </div>

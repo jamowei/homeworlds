@@ -292,6 +292,12 @@ function showGate(show) {
   const gate = $('gate');
   if (gate) gate.hidden = !show;
 }
+// The "Steuerung" dialog: a static how-to-play card. Shown from the toolbar,
+// dismissed by its button, a click on the backdrop, or Escape.
+function showControls(show) {
+  const el = $('controls');
+  if (el) el.hidden = !show;
+}
 function showHandshake(config) {
   const panel = $('handshake');
   if (!panel) return;
@@ -562,6 +568,16 @@ $('reconnect')?.addEventListener('click', () => reconnect());
 $('join-game')?.addEventListener('click', () => joinFromText($('join-input')?.value));
 $('accept-reply')?.addEventListener('click', () => acceptReplyText($('reply-input')?.value));
 $('gate-skip')?.addEventListener('click', () => showGate(false));
+
+// "Steuerung" dialog: open from the toolbar, close by button, backdrop or Esc.
+$('controls-open')?.addEventListener('click', () => showControls(true));
+$('controls-close')?.addEventListener('click', () => showControls(false));
+$('controls')?.addEventListener('click', (event) => {
+  if (event.target === $('controls')) showControls(false);
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') showControls(false);
+});
 
 // ticket 13: JSON export/import fallback
 $('export-board')?.addEventListener('click', () => exportBoard());

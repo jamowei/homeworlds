@@ -119,7 +119,8 @@
   border-radius: 9px;
 }
 
-.gate {
+.gate,
+.controls-overlay {
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -130,9 +131,11 @@
   background: rgba(15, 20, 32, 0.72);
   backdrop-filter: blur(3px);
 }
-:root[data-theme="light"] .gate { background: rgba(238, 241, 248, 0.78); }
+:root[data-theme="light"] .gate,
+:root[data-theme="light"] .controls-overlay { background: rgba(238, 241, 248, 0.78); }
 
-.gate-card {
+.gate-card,
+.controls-card {
   width: min(420px, 100%);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -141,6 +144,39 @@
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
 }
 .gate-card h2 { font-size: 1.25rem; margin-bottom: 0.4rem; }
+
+/* Controls ("Steuerung") dialog. */
+.controls-card {
+  width: min(560px, 100%);
+  max-height: min(80vh, 720px);
+  overflow-y: auto;
+}
+.controls-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+.controls-head h2 { font-size: 1.25rem; margin: 0; }
+.controls-card h3 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 1rem 0 0.3rem;
+}
+.controls-list { margin: 0; }
+.controls-list > div {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.controls-list > div:first-child { border-top: none; }
+.controls-list dt { flex: 0 0 9.5rem; font-weight: 700; }
+.controls-list dd { margin: 0; color: var(--muted); }
 .gate-help { color: var(--muted); font-size: 0.88rem; margin-bottom: 0.9rem; }
 .gate-sep {
   text-align: center;
