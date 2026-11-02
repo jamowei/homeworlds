@@ -167,7 +167,11 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - **Name is mandatory** before creating or joining a game; default suggestion "Gast".
 
 ### Presentation
-- German UI, reusing the existing `style.css` colour tokens and dark/light theme; new `play.html` with its own JS/CSS; linked from the existing bottom nav.
+- German UI, reusing the existing `style.css` colour tokens and dark/light theme; `play.html` keeps its own JS/CSS so the reference pages are untouched.
+- Header is just "Homeworlds" — no subheading and no bottom-nav links.
+- Toolbar shows the connection status and the current zoom level, plus the "Steuerung", "Verbindung erneuern" and "Zurücksetzen" buttons.
+- The invite panel and the JSON exchange panel collapse (fold) so the board gets the space; "Board als JSON austauschen" sits below the board.
+- A "Steuerung" dialog lists every action (move, rotate, flip, reset, zoom, pan, connect) so a new player learns the gestures.
 
 ## Testing Decisions
 
