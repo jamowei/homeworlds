@@ -35,6 +35,7 @@ const PEER_ID = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36)
 const $ = (id) => document.getElementById(id);
 const svg = $('board');
 const statusEl = $('status');
+const zoomEl = $('zoom-level');
 const store = createStore();
 
 // --- Identity -----------------------------------------------------------
@@ -85,6 +86,7 @@ function scheduleSave() {
 function setDocument(next) {
   doc = next;
   renderer.render(doc);
+  updateZoom();
   scheduleSave();
 }
 
@@ -142,6 +144,14 @@ function updateStatus() {
   }[state];
   if (state === 'connected' && opponentName) text += ` mit ${opponentName}`;
   statusEl.textContent = text;
+}
+
+// The zoom readout sits next to the status. Zoom lives on the document camera,
+// so every camera change already flows through `setDocument`.
+function updateZoom() {
+  if (!zoomEl) return;
+  const zoom = doc?.camera?.zoom;
+  zoomEl.textContent = `Zoom ${Math.round((Number.isFinite(zoom) ? zoom : 1) * 100)}%`;
 }
 
 function onConnected(transport) {
@@ -530,6 +540,7 @@ function handleOperation(op) {
 // --- Init ---------------------------------------------------------------
 
 renderer.render(doc);
+updateZoom();
 requestAnimationFrame(() => {
   renderer.measure();
   // No saved board: fit the whole world (Bank included) on screen immediately.

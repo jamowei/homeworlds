@@ -55,7 +55,8 @@
   margin-bottom: 0.75rem;
 }
 
-.status {
+.status,
+.zoom {
   font-size: 0.85rem;
   font-weight: 700;
   padding: 0.25rem 0.7rem;
@@ -64,6 +65,7 @@
   background: var(--surface-2);
   color: var(--muted);
 }
+.zoom { font-variant-numeric: tabular-nums; }
 .status[data-state="connected"] { color: var(--green); border-color: var(--green); }
 .status[data-state="waiting"] { color: var(--yellow); border-color: var(--yellow); }
 .status[data-state="offline"] { color: var(--muted); }
