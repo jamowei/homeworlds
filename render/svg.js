@@ -8,8 +8,14 @@ import { WORLD, BANK, bankLayout, COLORS, SIZES, clamp, clampZoom, MIN_ZOOM, MAX
 
 export const SVG_NS = 'http://www.w3.org/2000/svg';
 
-// Side length of a piece triangle in world units.
-export const PIECE_SIZE = 48;
+// Side length of a piece in world units, by Homeworlds size (1/2/3 =
+// small/medium/large). Larger sizes are drawn visibly larger so relative size
+// reads at a glance. The Bank cell in core/state.js is sized for the largest.
+export const PIECE_SIZES = Object.freeze({ 1: 56, 2: 68, 3: 80 });
+
+export function pieceSize(size) {
+  return PIECE_SIZES[size] || PIECE_SIZES[3];
+}
 
 const COLOR_VAR = {
   yellow: 'var(--yellow)',
@@ -26,9 +32,10 @@ function el(name, attrs = {}) {
   return node;
 }
 
-function trianglePoints() {
-  const h = PIECE_SIZE * 0.62;
-  const w = PIECE_SIZE * 0.5;
+function trianglePoints(size) {
+  const s = pieceSize(size);
+  const h = s * 0.62;
+  const w = s * 0.5;
   return `0,${-h} ${-w},${h} ${w},${h}`;
 }
 
@@ -80,13 +87,16 @@ export function createRenderer(svg, options = {}) {
   for (const color of COLORS) {
     for (const size of SIZES) {
       const cell = layout.cellFor(color, size);
+      const s = pieceSize(size);
+      const slotW = s + 14;
+      const slotH = s * 1.24 + 16; // tall enough for a triangle of this size
       for (let copy = 0; copy < BANK.copies; copy++) {
         slots.appendChild(
           el('rect', {
-            x: cell.centerX + BANK.copyOffsets[copy] - PIECE_SIZE / 2 - 6,
-            y: cell.centerY - PIECE_SIZE / 2 - 8,
-            width: PIECE_SIZE + 12,
-            height: PIECE_SIZE + 16,
+            x: cell.centerX + BANK.copyOffsets[copy] - slotW / 2,
+            y: cell.centerY - slotH / 2,
+            width: slotW,
+            height: slotH,
             rx: 8,
             class: 'bank-slot',
           }),
@@ -218,6 +228,7 @@ export function createRenderer(svg, options = {}) {
   }
 
   function renderPiece(piece) {
+    const size = pieceSize(piece.size);
     const group = el('g', {
       class: `piece piece-${piece.kind} color-${piece.color}`,
       'data-id': piece.id,
@@ -225,7 +236,7 @@ export function createRenderer(svg, options = {}) {
     });
 
     if (piece.kind === 'star') {
-      const s = PIECE_SIZE * 0.86;
+      const s = size * 0.86;
       group.appendChild(
         el('rect', {
           x: -s / 2,
@@ -240,20 +251,20 @@ export function createRenderer(svg, options = {}) {
     } else {
       group.appendChild(
         el('polygon', {
-          points: trianglePoints(),
+          points: trianglePoints(piece.size),
           class: 'piece-shape',
           fill: COLOR_VAR[piece.color],
         }),
       );
     }
 
-    // Size pips, bottom-left corner, in an unrotated sub-group so they stay
-    // readable whichever way the triangle points.
+    // Size pips (1/2/3 dots), centred on the piece for visibility, in an
+    // unrotated sub-group so they stay upright whichever way the piece points.
     const pips = el('g', { class: 'piece-pips', transform: `rotate(${-piece.rotation})` });
-    const px = -PIECE_SIZE * 0.42;
-    const py = PIECE_SIZE * 0.42;
+    const gap = size * 0.16;
+    const startY = -((piece.size - 1) * gap) / 2;
     for (let i = 0; i < piece.size; i++) {
-      pips.appendChild(el('circle', { cx: px, cy: py - i * 6, r: 2.4, class: 'piece-pip' }));
+      pips.appendChild(el('circle', { cx: 0, cy: startY + i * gap, r: size * 0.055, class: 'piece-pip' }));
     }
     group.appendChild(pips);
 

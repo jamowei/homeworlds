@@ -35,14 +35,15 @@ export const WORLD = Object.freeze({ width: 2400, height: 1500 });
 // The Bank is a fixed 4 colour rows x 3 size columns grid at the far-right
 // edge of the world. Each cell holds `copies` identical pieces. Slots are
 // static: a piece dragged out leaves its slot empty and nothing reflows.
+// The cell is sized for the largest piece (see render/svg.js PIECE_SIZES).
 export const BANK = Object.freeze({
-  cellWidth: 180,
-  cellHeight: 200,
+  cellWidth: 300,
+  cellHeight: 150,
   padding: 20,
   copies: 3,
   // Horizontal offsets of the three copies within a Bank cell. Shared with the
   // renderer via `BANK.copyOffsets` so the slots and the pieces line up.
-  copyOffsets: Object.freeze([-54, 0, 54]),
+  copyOffsets: Object.freeze([-100, 0, 100]),
 });
 
 export const MIN_ZOOM = 0.25;

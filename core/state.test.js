@@ -115,7 +115,7 @@ test('clampZoom uses the exported zoom bounds', () => {
 });
 
 test('BANK exposes the copy offsets shared with the renderer', () => {
-  assert.deepEqual([...BANK.copyOffsets], [-54, 0, 54]);
+  assert.deepEqual([...BANK.copyOffsets], [-100, 0, 100]);
 });
 
 test('applying a camera message clamps its zoom', () => {

@@ -44,8 +44,8 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 20. As a player, I want a visible world boundary, so that I can see where the table ends.
 
 **Pieces: size, colour, shape**
-21. As a player, I want small/medium/large size shown as 1/2/3 pips on the piece, so that size is readable at a glance.
-22. As a player, I want the pips in the bottom-left corner of every piece, so that they stay visible even when pieces overlap.
+21. As a player, I want small/medium/large shown both as 1/2/3 pips on the piece and as an increasingly larger shape, so that size is readable at a glance.
+22. As a player, I want the pips centred on every piece, so that they are easy to see.
 23. As a player, I want four colours (yellow, green, red, blue), so that the four technologies are distinguishable.
 24. As a player, I want size and colour to be immutable, so that no action can accidentally change a piece's identity.
 
@@ -130,7 +130,8 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 ### Layout (deterministic)
 - One logical world with a fixed size larger than a typical viewport and a visible boundary.
 - Bank occupies a strip at the **far-right edge of the world** (world coordinates, so it pans/zooms with everything).
-- Bank grid: **4 colour rows × 3 size columns**, 3 identical copies laid out within each cell. Static slots — a vacated slot is not reflowed.
+- Bank grid: **4 colour rows × 3 size columns**, 3 identical copies laid out within each cell. Static slots — a vacated slot is not reflowed. The cell is sized for the largest piece.
+- Piece size is drawn, not just counted: small/medium/large pieces increase in side length (see `PIECE_SIZES` in `render/svg.js`), so relative size reads at a glance.
 - All 36 pieces start as `kind: 'ship'`, ordered in the Bank.
 
 ### Operations & conflict resolution
@@ -158,7 +159,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 
 ### Interaction details (settled)
 - Triangles: right-click toggles 0°/180°; squares ignore rotation but remember the angle that survives a flip.
-- Double-click flips triangle↔square, anchored at the piece's centre, preserving colour/size; pips bottom-left on both shapes (1/2/3 dots).
+- Double-click flips triangle↔square, anchored at the piece's centre, preserving colour/size; pips centred on both shapes (1/2/3 dots) and the shape grows with size.
 - Free drag, overlap allowed, dragged piece brought to front. No snapping, no true stacking, no multi-select (see Out of Scope).
 - Camera: shared pan+zoom; wheel / pinch; anchored at cursor; 25%–100% (current level shown in the toolbar); no independent free-look.
 - Touch: drag = move, **double-tap = rotate**, **long-press = flip**, pinch = zoom, background drag = pan.
