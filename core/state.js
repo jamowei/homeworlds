@@ -46,7 +46,7 @@ export const BANK = Object.freeze({
 });
 
 export const MIN_ZOOM = 0.25;
-export const MAX_ZOOM = 4;
+export const MAX_ZOOM = 1;
 
 const HALF_EXTENT = 30; // clamping margin for a piece centre
 

@@ -32,7 +32,7 @@ test('a valid board round-trips through export and import', () => {
   doc = applyMessage(doc, buildPieceMessage(doc, id, { x: 400, y: 500 }, 'a'));
   doc = applyMessage(doc, buildPieceMessage(doc, id, { rotation: 180 }, 'a'));
   doc = applyMessage(doc, buildPieceMessage(doc, pieceId('blue', 1, 1), { kind: 'star' }, 'a'));
-  doc = applyMessage(doc, buildCameraMessage(doc, { x: 250, y: 350, zoom: 2 }, 'a'));
+  doc = applyMessage(doc, buildCameraMessage(doc, { x: 250, y: 350, zoom: 0.7 }, 'a'));
 
   const restored = importDocument(exportDocument(doc), { fallbackGameId: 'ignored' });
 
@@ -41,7 +41,7 @@ test('a valid board round-trips through export and import', () => {
   assert.deepEqual(piecesOf(restored), piecesOf(doc));
   assert.equal(restored.camera.x, 250);
   assert.equal(restored.camera.y, 350);
-  assert.equal(restored.camera.zoom, 2);
+  assert.equal(restored.camera.zoom, 0.7);
   assert.equal(restored.resetVersion, doc.resetVersion);
   assert.equal(restored.resetBy, doc.resetBy);
 });

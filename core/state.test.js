@@ -101,15 +101,15 @@ test('the document carries a game id and a camera', () => {
   assert.equal(doc.camera.zoom, 1);
 });
 
-test('zoom is clamped to roughly 25%–400%', () => {
+test('zoom is clamped to roughly 25%–100%', () => {
   assert.equal(clampZoom(0.01), 0.25);
-  assert.equal(clampZoom(100), 4);
-  assert.equal(clampZoom(1.5), 1.5);
+  assert.equal(clampZoom(100), 1);
+  assert.equal(clampZoom(0.5), 0.5);
 });
 
 test('clampZoom uses the exported zoom bounds', () => {
   assert.equal(MIN_ZOOM, 0.25);
-  assert.equal(MAX_ZOOM, 4);
+  assert.equal(MAX_ZOOM, 1);
   assert.equal(clampZoom(MIN_ZOOM / 100), MIN_ZOOM);
   assert.equal(clampZoom(MAX_ZOOM * 100), MAX_ZOOM);
 });
@@ -122,26 +122,26 @@ test('applying a camera message clamps its zoom', () => {
   const doc = createDocument('g1');
   const message = buildCameraMessage(doc, { x: 100, y: 200, zoom: 99 }, 'a');
   const next = applyMessage(doc, message);
-  assert.equal(next.camera.zoom, 4);
+  assert.equal(next.camera.zoom, 1);
   assert.equal(next.camera.x, 100);
   assert.equal(next.camera.y, 200);
 });
 
 test('camera is last-write-wins: a newer version wins', () => {
   const doc = createDocument('g1');
-  const first = applyMessage(doc, buildCameraMessage(doc, { x: 10, y: 10, zoom: 2 }, 'a'));
-  const second = applyMessage(first, buildCameraMessage(first, { x: 50, y: 50, zoom: 1 }, 'a'));
+  const first = applyMessage(doc, buildCameraMessage(doc, { x: 10, y: 10, zoom: 0.3 }, 'a'));
+  const second = applyMessage(first, buildCameraMessage(first, { x: 50, y: 50, zoom: 0.9 }, 'a'));
   assert.equal(second.camera.x, 50);
-  assert.equal(second.camera.zoom, 1);
+  assert.equal(second.camera.zoom, 0.9);
 });
 
 test('camera ignores a stale (older) update', () => {
   const doc = createDocument('g1');
-  const first = applyMessage(doc, buildCameraMessage(doc, { x: 10, y: 10, zoom: 2 }, 'a'));
-  const stale = { type: 'camera', id: 'x', by: 'b', camera: { x: 999, y: 999, zoom: 3, version: 0 } };
+  const first = applyMessage(doc, buildCameraMessage(doc, { x: 10, y: 10, zoom: 0.8 }, 'a'));
+  const stale = { type: 'camera', id: 'x', by: 'b', camera: { x: 999, y: 999, zoom: 0.5, version: 0 } };
   const next = applyMessage(first, stale);
   assert.equal(next.camera.x, 10);
-  assert.equal(next.camera.zoom, 2);
+  assert.equal(next.camera.zoom, 0.8);
 });
 
 test('camera ties are broken by peer id', () => {
