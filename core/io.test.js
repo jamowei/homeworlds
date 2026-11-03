@@ -19,7 +19,7 @@ import { exportDocument, importDocument } from './io.js';
 function piecesOf(doc) {
   const out = {};
   for (const [id, p] of Object.entries(doc.pieces)) {
-    out[id] = { id: p.id, color: p.color, size: p.size, kind: p.kind, x: p.x, y: p.y, rotation: p.rotation };
+    out[id] = { id: p.id, color: p.color, size: p.size, kind: p.kind, x: p.x, y: p.y, owner: p.owner };
   }
   return out;
 }
@@ -29,8 +29,7 @@ function piecesOf(doc) {
 test('a valid board round-trips through export and import', () => {
   let doc = createDocument('game-round');
   const id = pieceId('red', 3, 2);
-  doc = applyMessage(doc, buildPieceMessage(doc, id, { x: 400, y: 500 }, 'a'));
-  doc = applyMessage(doc, buildPieceMessage(doc, id, { rotation: 180 }, 'a'));
+  doc = applyMessage(doc, buildPieceMessage(doc, id, { x: 400, y: 500, owner: 'guest' }, 'a'));
   doc = applyMessage(doc, buildPieceMessage(doc, pieceId('blue', 1, 1), { kind: 'star' }, 'a'));
   doc = applyMessage(doc, buildCameraMessage(doc, { x: 250, y: 350, zoom: 0.7 }, 'a'));
 
@@ -75,7 +74,7 @@ test('importDocument ignores a piece with an unknown id and keeps the initial sl
   const doc = createDocument('g1');
   const data = JSON.parse(exportDocument(doc));
   data.pieces['purple-huge-9'] = {
-    id: 'purple-huge-9', color: 'purple', size: 9, kind: 'ship', x: 10, y: 10, rotation: 0, version: 5,
+    id: 'purple-huge-9', color: 'purple', size: 9, kind: 'ship', x: 10, y: 10, owner: null, version: 5,
   };
   const restored = importDocument(JSON.stringify(data));
   assert.ok(restored);
@@ -83,7 +82,7 @@ test('importDocument ignores a piece with an unknown id and keeps the initial sl
   assert.equal(restored.pieces['purple-huge-9'], undefined);
 });
 
-test('importDocument rejects bad colour/size/kind/rotation and falls back to the initial piece', () => {
+test('importDocument rejects bad colour/size/kind/owner and falls back to the initial piece', () => {
   const id = pieceId('green', 2, 1);
   const initial = createDocument('g1');
   const data = JSON.parse(exportDocument(initial));
@@ -103,9 +102,9 @@ test('importDocument rejects bad colour/size/kind/rotation and falls back to the
   assert.deepEqual(piecesOf(badKind)[id], piecesOf(initial)[id]);
 
   const data4 = JSON.parse(exportDocument(initial));
-  data4.pieces[id].rotation = 45;
-  const badRotation = importDocument(JSON.stringify(data4));
-  assert.deepEqual(piecesOf(badRotation)[id], piecesOf(initial)[id]);
+  data4.pieces[id].owner = 'intruder';
+  const badOwner = importDocument(JSON.stringify(data4));
+  assert.deepEqual(piecesOf(badOwner)[id], piecesOf(initial)[id]);
 });
 
 test('importDocument ignores a piece with non-finite coordinates', () => {
@@ -181,7 +180,7 @@ test('applyMessage ignores piece messages with missing or corrupt fields', () =>
   assert.equal(
     applyMessage(doc, {
       type: 'piece', id: 'x', by: 'a',
-      piece: { id: pieceId('red', 1, 1), color: 'red', size: 1, kind: 'ship', x: 'bad', y: 10, rotation: 0, version: 1 },
+      piece: { id: pieceId('red', 1, 1), color: 'red', size: 1, kind: 'ship', x: 'bad', y: 10, owner: null, version: 1 },
     }),
     doc,
   );

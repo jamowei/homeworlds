@@ -12,7 +12,7 @@ import {
   buildFlipMessage,
   buildPieceMessage,
   buildResetMessage,
-  buildRotateMessage,
+  buildSendHomeMessage,
   messageId,
   mergeDocuments,
 } from './core/state.js';
@@ -67,11 +67,45 @@ const requestedGameId = new URLSearchParams(location.search).get('game');
 let gameId = requestedGameId || store.lastGameId() || 'local';
 store.rememberGameId(gameId);
 
+// Which player am I: 'host' (created the game, or playing alone) or 'guest'
+// (joined via an invite). A piece's `owner` is one of these two roles, and the
+// direction it is drawn in is derived from the owner and this local role, so no
+// absolute rotation is ever stored or synced. The role is kept per tab
+// (sessionStorage) so two tabs in the same browser stay distinct, falling back
+// to localStorage so it survives a browser restart.
+const ROLE_PREFIX = 'hw-role:';
+function readRole(id) {
+  try {
+    const perTab = globalThis.sessionStorage?.getItem(ROLE_PREFIX + id);
+    if (perTab) return perTab;
+  } catch {
+    // sessionStorage can be unavailable (private mode); fall through.
+  }
+  return store.getPreference(ROLE_PREFIX + id) || 'host';
+}
+function writeRole(id, role) {
+  store.setPreference(ROLE_PREFIX + id, role);
+  try {
+    globalThis.sessionStorage?.setItem(ROLE_PREFIX + id, role);
+  } catch {
+    // ignore
+  }
+}
+let localRole = readRole(gameId);
+
 const saved = store.loadDocument(gameId);
 const restored = saved && saved.pieces && saved.camera ? saved : null;
 let doc = restored || createDocument(gameId);
 
-const renderer = createRenderer(svg, { onOperation: handleOperation });
+const renderer = createRenderer(svg, { onOperation: handleOperation, getLocalRole: () => localRole });
+
+// Switch the local role (create/join) and repaint, since every ship's direction
+// depends on it.
+function setLocalRole(role) {
+  localRole = role;
+  writeRole(gameId, role);
+  renderer.render(doc);
+}
 
 let saveTimer = null;
 function flushSave() {
@@ -220,6 +254,9 @@ function switchGame(nextGameId, { fresh = false } = {}) {
   if (!nextGameId || nextGameId === gameId) return;
   gameId = nextGameId;
   store.rememberGameId(gameId);
+  // A different game means a different role: start from that game's saved role
+  // (the caller then overrides it for create/join).
+  localRole = readRole(gameId);
   useBroadcast(gameId);
   // A brand-new game starts from the deterministic initial table; joining an
   // existing game resumes its saved board when there is one. Always go through
@@ -385,6 +422,7 @@ async function createGame() {
   }
   showError('gate-error', '');
   switchGame(newGameId(), { fresh: true });
+  setLocalRole('host');
   const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
   try {
     const offer = await transport.createOffer();
@@ -409,6 +447,7 @@ async function joinAsGuest(offerBlob) {
     return;
   }
   switchGame(offerBlob.gameId);
+  setLocalRole('guest');
   const transport = attachWebRtc(createWebRtcTransport({ role: 'guest', gameId: offerBlob.gameId }));
   try {
     const answer = await transport.createAnswer(offerBlob);
@@ -521,13 +560,14 @@ function importBoard() {
 function handleOperation(op) {
   switch (op.type) {
     case 'move':
-      dispatch(buildPieceMessage(doc, op.id, { x: op.x, y: op.y }, PEER_ID));
-      break;
-    case 'rotate':
-      dispatch(buildRotateMessage(doc, op.id, PEER_ID));
+      // Moving a piece claims it: it will point away from this player.
+      dispatch(buildPieceMessage(doc, op.id, { x: op.x, y: op.y, owner: localRole }, PEER_ID));
       break;
     case 'flip':
-      dispatch(buildFlipMessage(doc, op.id, PEER_ID));
+      dispatch(buildFlipMessage(doc, op.id, PEER_ID, localRole));
+      break;
+    case 'send-home':
+      dispatch(buildSendHomeMessage(doc, op.id, PEER_ID));
       break;
     case 'camera':
       dispatch(buildCameraMessage(doc, op.camera, PEER_ID));

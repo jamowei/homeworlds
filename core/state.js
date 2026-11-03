@@ -15,17 +15,23 @@
 //   {
 //     gameId, meta,
 //     resetVersion, resetBy,
-//     pieces: { [id]: { id, color, size, kind, x, y, rotation, version, by } },
+//     pieces: { [id]: { id, color, size, kind, x, y, owner, version, by } },
 //     camera: { x, y, zoom, version, by }
 //   }
 //
-// `kind` is 'ship' (triangle) or 'star' (square). `rotation` is 0 or 180 (the
-// angle a triangle remembers across a flip). Coordinates are world units.
+// `kind` is 'ship' (triangle) or 'star' (square). Coordinates are world units.
+//
+// A piece's `owner` records which player last moved it: null (neutral — nobody
+// has touched it, e.g. it is still in the Bank), 'host' or 'guest'. It is NOT a
+// stored rotation: the pointing direction is derived per viewer in
+// `pieceFacing`, so a ship always points away from its owner, towards the other
+// player. A star has no owner (it has no point and is shared by both players).
 
 export const COLORS = ['yellow', 'green', 'red', 'blue'];
 export const SIZES = [1, 2, 3];
 export const KINDS = ['ship', 'star'];
-export const ROTATIONS = [0, 180];
+// The two players. A piece's `owner` is one of these, or null when neutral.
+export const ROLES = ['host', 'guest'];
 
 export const SIZE_NAMES = { 1: 'small', 2: 'medium', 3: 'large' };
 
@@ -54,7 +60,7 @@ const HALF_EXTENT = 30; // clamping margin for a piece centre
 const KNOWN_COLORS = new Set(COLORS);
 const KNOWN_SIZES = new Set(SIZES);
 const KNOWN_KINDS = new Set(KINDS);
-const KNOWN_ROTATIONS = new Set(ROTATIONS);
+const KNOWN_ROLES = new Set(ROLES);
 
 export function pieceId(color, size, copy) {
   return `${color}-${SIZE_NAMES[size]}-${copy}`;
@@ -120,22 +126,45 @@ export function isKnownId(id) {
   return KNOWN_IDS.has(id);
 }
 
-export function createDocument(gameId = 'local', meta = {}) {
+// The deterministic Bank slot every piece starts in and returns to. Derived
+// from the Bank layout, so "send home" never needs to store the origin: the
+// slot is a pure function of the piece id.
+const HOME_POSITIONS = (() => {
   const layout = bankLayout();
+  const homes = {};
+  for (const color of COLORS) {
+    for (const size of SIZES) {
+      const cell = layout.cellFor(color, size);
+      for (let copy = 1; copy <= BANK.copies; copy++) {
+        homes[pieceId(color, size, copy)] = {
+          x: cell.centerX + BANK.copyOffsets[copy - 1],
+          y: cell.centerY,
+        };
+      }
+    }
+  }
+  return homes;
+})();
+
+export function homePosition(id) {
+  return HOME_POSITIONS[id] || null;
+}
+
+export function createDocument(gameId = 'local', meta = {}) {
   const pieces = {};
   COLORS.forEach((color) => {
     SIZES.forEach((size) => {
-      const cell = layout.cellFor(color, size);
       for (let copy = 1; copy <= BANK.copies; copy++) {
         const id = pieceId(color, size, copy);
+        const home = HOME_POSITIONS[id];
         pieces[id] = {
           id,
           color,
           size,
           kind: 'ship',
-          x: cell.centerX + BANK.copyOffsets[copy - 1],
-          y: cell.centerY,
-          rotation: 0,
+          x: home.x,
+          y: home.y,
+          owner: null,
           version: 0,
           by: '',
         };
@@ -175,7 +204,7 @@ export function isValidPiece(piece) {
   if (!KNOWN_COLORS.has(piece.color)) return false;
   if (!KNOWN_SIZES.has(piece.size)) return false;
   if (!KNOWN_KINDS.has(piece.kind)) return false;
-  if (!KNOWN_ROTATIONS.has(piece.rotation)) return false;
+  if (piece.owner != null && !KNOWN_ROLES.has(piece.owner)) return false;
   if (!Number.isFinite(piece.x) || !Number.isFinite(piece.y)) return false;
   if (!Number.isFinite(Number(piece.version))) return false;
   return true;
@@ -193,7 +222,7 @@ export function isValidCamera(camera) {
 // the immutable identity. Returns a clean piece (finite clamped coordinates, a
 // numeric version, a string author) or null when the input is not a valid,
 // identity-preserving piece. Keeps identical semantics on both paths: known id,
-// immutable colour/size, valid kind/rotation, finite clamped coords.
+// immutable colour/size, valid kind/owner, finite clamped coords.
 export function normalisePiece(piece, known) {
   if (!isValidPiece(piece)) return null;
   if (!known || piece.id !== known.id) return null;
@@ -205,7 +234,7 @@ export function normalisePiece(piece, known) {
     kind: piece.kind,
     x: clampX(piece.x),
     y: clampY(piece.y),
-    rotation: piece.rotation,
+    owner: piece.owner == null ? null : piece.owner,
     version: Number(piece.version),
     by: typeof piece.by === 'string' ? piece.by : '',
   };
@@ -233,6 +262,8 @@ function nextVersion(doc) {
 
 // Build a local piece mutation. The caller applies the returned message with
 // `applyMessage` and broadcasts it, so the local and remote paths are identical.
+// `changes.owner` may be null (neutral); an undefined owner keeps the current
+// one.
 export function buildPieceMessage(doc, id, changes = {}, by = '') {
   const current = doc.pieces[id];
   if (!current) return null;
@@ -243,27 +274,40 @@ export function buildPieceMessage(doc, id, changes = {}, by = '') {
     kind: changes.kind ?? current.kind,
     x: Number.isFinite(changes.x) ? changes.x : current.x,
     y: Number.isFinite(changes.y) ? changes.y : current.y,
-    rotation: changes.rotation ?? current.rotation,
+    owner: changes.owner !== undefined ? changes.owner : current.owner,
     version: nextVersion(doc),
     by,
   };
   return { type: 'piece', id: messageId(), by, piece };
 }
 
-// Rotate a triangle between upright and upside down. A square (star) has no
-// meaningful rotation, so this returns null for it and for a missing piece.
-export function buildRotateMessage(doc, id, by = '') {
-  const piece = doc?.pieces?.[id];
-  if (!piece || piece.kind !== 'ship') return null;
-  return buildPieceMessage(doc, id, { rotation: piece.rotation === 0 ? 180 : 0 }, by);
-}
-
-// Flip a piece between triangle (ship) and square (star), in place. The colour,
-// size and remembered rotation are preserved.
-export function buildFlipMessage(doc, id, by = '') {
+// Flip a piece between triangle (ship) and square (star), in place, preserving
+// colour and size. `owner` is the role of the player flipping: the resulting
+// ship belongs to whoever made it, while a star has no owner (it is shared).
+export function buildFlipMessage(doc, id, by = '', owner = null) {
   const piece = doc?.pieces?.[id];
   if (!piece) return null;
-  return buildPieceMessage(doc, id, { kind: piece.kind === 'ship' ? 'star' : 'ship' }, by);
+  const kind = piece.kind === 'ship' ? 'star' : 'ship';
+  return buildPieceMessage(doc, id, { kind, owner: kind === 'ship' ? owner : null }, by);
+}
+
+// Send a piece home: back to its deterministic Bank slot as an upright ship.
+// It becomes neutral (belongs to nobody), so both players see it pointing up
+// until one of them moves it again.
+export function buildSendHomeMessage(doc, id, by = '') {
+  const piece = doc?.pieces?.[id];
+  const home = homePosition(id);
+  if (!piece || !home) return null;
+  return buildPieceMessage(doc, id, { kind: 'ship', x: home.x, y: home.y, owner: null }, by);
+}
+
+// How a piece should read to one player. A ship points up unless the *other*
+// player owns it, in which case it points down towards the viewer; a neutral
+// piece (nobody's) and one's own ship both point up. Stars have no point, so
+// they always return 0. `localRole` is 'host' or 'guest'.
+export function pieceFacing(piece, localRole) {
+  if (!piece || piece.kind !== 'ship') return 0;
+  return piece.owner && piece.owner !== localRole ? 180 : 0;
 }
 
 export function buildCameraMessage(doc, camera, by = '') {

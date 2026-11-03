@@ -4,7 +4,11 @@
 
 **Blocked by:** 01 (Initial board renders)
 
-**Status:** resolved
+**Status:** superseded
+
+> Superseded by issue 14: the manual rotate gesture is removed (direction now
+> reflects who last moved a piece), the double-click gesture now sends a piece
+> home, and right-click is reassigned to flip. Kept for history.
 
 - [x] Right-clicking a triangle toggles it between pointing up and pointing down
 - [x] Right-clicking a square does nothing

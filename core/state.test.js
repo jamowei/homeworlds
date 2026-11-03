@@ -16,10 +16,12 @@ import {
   buildPieceMessage,
   buildFlipMessage,
   buildResetMessage,
-  buildRotateMessage,
+  buildSendHomeMessage,
   clampZoom,
+  homePosition,
   mergeDocuments,
   normalisePiece,
+  pieceFacing,
   resetDocument,
 } from './state.js';
 
@@ -46,11 +48,11 @@ test('piece ids are deterministic across loads', () => {
   assert.deepEqual(a.pieces, b.pieces);
 });
 
-test('all pieces start as upright ships', () => {
+test('all pieces start as neutral ships in the Bank', () => {
   const doc = createDocument('g1');
   for (const piece of Object.values(doc.pieces)) {
     assert.equal(piece.kind, 'ship');
-    assert.equal(piece.rotation, 0);
+    assert.equal(piece.owner, null, `${piece.id} starts neutral`);
   }
 });
 
@@ -155,10 +157,11 @@ test('camera ties are broken by peer id', () => {
 test('a move updates the piece position', () => {
   const doc = createDocument('g1');
   const id = pieceId('red', 3, 1);
-  const message = buildPieceMessage(doc, id, { x: 400, y: 500 }, 'a');
+  const message = buildPieceMessage(doc, id, { x: 400, y: 500, owner: 'host' }, 'a');
   const next = applyMessage(doc, message);
   assert.equal(next.pieces[id].x, 400);
   assert.equal(next.pieces[id].y, 500);
+  assert.equal(next.pieces[id].owner, 'host', 'moving a piece claims it');
 });
 
 test('a move is clamped inside the world bounds', () => {
@@ -188,8 +191,16 @@ test('a move with an unknown piece id is ignored', () => {
     type: 'piece',
     id: 'm',
     by: 'a',
-    piece: { id: 'purple-huge-9', color: 'purple', size: 9, kind: 'ship', x: 10, y: 10, rotation: 0, version: 1 },
+    piece: { id: 'purple-huge-9', color: 'purple', size: 9, kind: 'ship', x: 10, y: 10, owner: null, version: 1 },
   };
+  assert.equal(applyMessage(doc, message), doc);
+});
+
+test('a move with an unknown owner is ignored', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('red', 2, 1);
+  const message = buildPieceMessage(doc, id, { x: 10, y: 10, owner: 'host' }, 'a');
+  message.piece.owner = 'intruder';
   assert.equal(applyMessage(doc, message), doc);
 });
 
@@ -212,17 +223,20 @@ test('a move cannot change a piece colour or size', () => {
   assert.equal(next.pieces[id].size, 2);
 });
 
-test('rotating a triangle toggles 0 and 180 and keeps position/colour/size', () => {
-  const doc = createDocument('g1');
-  const id = pieceId('red', 3, 2);
-  const before = doc.pieces[id];
-  const rotated = applyMessage(doc, buildPieceMessage(doc, id, { rotation: 180 }, 'a'));
-  assert.equal(rotated.pieces[id].rotation, 180);
-  assert.equal(rotated.pieces[id].x, before.x);
-  assert.equal(rotated.pieces[id].y, before.y);
-  assert.equal(rotated.pieces[id].color, 'red');
-  assert.equal(rotated.pieces[id].size, 3);
-  assert.equal(rotated.pieces[id].kind, 'ship');
+test('pieceFacing points a ship at the opponent of its owner', () => {
+  const ship = { kind: 'ship', owner: null };
+  // Neutral and your own ships point up; the opponent's ship points down.
+  assert.equal(pieceFacing(ship, 'host'), 0, 'neutral points up for host');
+  assert.equal(pieceFacing(ship, 'guest'), 0, 'neutral points up for guest');
+  assert.equal(pieceFacing({ kind: 'ship', owner: 'host' }, 'host'), 0, 'own ship points up');
+  assert.equal(pieceFacing({ kind: 'ship', owner: 'guest' }, 'host'), 180, 'opponent ship points down');
+  assert.equal(pieceFacing({ kind: 'ship', owner: 'guest' }, 'guest'), 0, 'own ship points up (guest)');
+  assert.equal(pieceFacing({ kind: 'ship', owner: 'host' }, 'guest'), 180, 'opponent ship points down (guest)');
+});
+
+test('pieceFacing has no direction for stars', () => {
+  assert.equal(pieceFacing({ kind: 'star', owner: null }, 'host'), 0);
+  assert.equal(pieceFacing({ kind: 'star', owner: 'guest' }, 'host'), 0);
 });
 
 test('a flip turns a ship into a star in place, preserving colour and size', () => {
@@ -237,52 +251,47 @@ test('a flip turns a ship into a star in place, preserving colour and size', () 
   assert.equal(flipped.pieces[id].size, 1);
 });
 
-test('a flipped-back triangle remembers its previous orientation', () => {
+test('flipping to a star makes it neutral; flipping back claims it for the flipper', () => {
   const doc = createDocument('g1');
   const id = pieceId('green', 2, 1);
-  let next = applyMessage(doc, buildPieceMessage(doc, id, { rotation: 180 }, 'a'));
-  next = applyMessage(next, buildPieceMessage(next, id, { kind: 'star' }, 'a'));
-  assert.equal(next.pieces[id].kind, 'star');
-  assert.equal(next.pieces[id].rotation, 180, 'the angle survives the flip');
-  next = applyMessage(next, buildPieceMessage(next, id, { kind: 'ship' }, 'a'));
-  assert.equal(next.pieces[id].kind, 'ship');
-  assert.equal(next.pieces[id].rotation, 180, 'and is restored on the flip back');
-});
-
-test('buildRotateMessage toggles a ship 0<->180 in place', () => {
-  const doc = createDocument('g1');
-  const id = pieceId('red', 3, 2);
-  const rotated = applyMessage(doc, buildRotateMessage(doc, id, 'a'));
-  assert.equal(rotated.pieces[id].rotation, 180);
-  const back = applyMessage(rotated, buildRotateMessage(rotated, id, 'a'));
-  assert.equal(back.pieces[id].rotation, 0);
-  // position, colour, size and shape are untouched
-  assert.equal(back.pieces[id].x, doc.pieces[id].x);
-  assert.equal(back.pieces[id].color, 'red');
-  assert.equal(back.pieces[id].size, 3);
+  const star = applyMessage(doc, buildFlipMessage(doc, id, 'a', 'host'));
+  assert.equal(star.pieces[id].kind, 'star');
+  assert.equal(star.pieces[id].owner, null, 'a star belongs to nobody');
+  const back = applyMessage(star, buildFlipMessage(star, id, 'a', 'guest'));
   assert.equal(back.pieces[id].kind, 'ship');
+  assert.equal(back.pieces[id].owner, 'guest', 'the resulting ship belongs to the flipper');
 });
 
-test('buildRotateMessage refuses a square and an unknown piece', () => {
-  const doc = createDocument('g1');
-  const id = pieceId('blue', 2, 1);
-  const starDoc = applyMessage(doc, buildFlipMessage(doc, id, 'a'));
-  assert.equal(starDoc.pieces[id].kind, 'star');
-  assert.equal(buildRotateMessage(starDoc, id, 'a'), null, 'rotating a square does nothing');
-  assert.equal(buildRotateMessage(doc, 'not-a-piece', 'a'), null);
-});
-
-test('buildFlipMessage toggles ship<->star in place, preserving identity', () => {
+test('buildFlipMessage preserves identity and refuses an unknown piece', () => {
   const doc = createDocument('g1');
   const id = pieceId('green', 1, 2);
-  const flipped = applyMessage(doc, buildFlipMessage(doc, id, 'a'));
+  const flipped = applyMessage(doc, buildFlipMessage(doc, id, 'a', 'host'));
   assert.equal(flipped.pieces[id].kind, 'star');
   assert.equal(flipped.pieces[id].x, doc.pieces[id].x);
   assert.equal(flipped.pieces[id].color, 'green');
   assert.equal(flipped.pieces[id].size, 1);
-  const back = applyMessage(flipped, buildFlipMessage(flipped, id, 'a'));
-  assert.equal(back.pieces[id].kind, 'ship');
-  assert.equal(buildFlipMessage(doc, 'not-a-piece', 'a'), null);
+  assert.equal(buildFlipMessage(doc, 'not-a-piece', 'a', 'host'), null);
+});
+
+test('buildSendHomeMessage returns a piece to its slot as a neutral ship', () => {
+  const doc = createDocument('g1');
+  const id = pieceId('red', 3, 2);
+  const home = homePosition(id);
+  // Move it far away, make it a star and claim it.
+  let next = applyMessage(doc, buildPieceMessage(doc, id, { x: 500, y: 600, owner: 'host' }, 'a'));
+  next = applyMessage(next, buildFlipMessage(next, id, 'a', 'host'));
+  assert.equal(next.pieces[id].kind, 'star');
+  // Send it home.
+  next = applyMessage(next, buildSendHomeMessage(next, id, 'a'));
+  assert.equal(next.pieces[id].kind, 'ship', 'home is an upright ship');
+  assert.equal(next.pieces[id].x, home.x);
+  assert.equal(next.pieces[id].y, home.y);
+  assert.equal(next.pieces[id].owner, null, 'a piece at home belongs to nobody');
+});
+
+test('buildSendHomeMessage refuses an unknown piece', () => {
+  const doc = createDocument('g1');
+  assert.equal(buildSendHomeMessage(doc, 'not-a-piece', 'a'), null);
 });
 
 // --- normalisePiece (shared by the sync reducer and JSON import) --------
@@ -306,13 +315,13 @@ test('normalisePiece clamps coordinates and stamps a finite version', () => {
   const doc = createDocument('g1');
   const id = pieceId('yellow', 2, 2);
   const normalised = normalisePiece(
-    { ...doc.pieces[id], x: 999999, y: -999999, kind: 'star', rotation: 180, version: '4', by: 'a' },
+    { ...doc.pieces[id], x: 999999, y: -999999, kind: 'star', owner: 'guest', version: '4', by: 'a' },
     doc.pieces[id],
   );
   assert.ok(normalised.x > 0 && normalised.x < WORLD.width);
   assert.ok(normalised.y > 0 && normalised.y < WORLD.height);
   assert.equal(normalised.kind, 'star');
-  assert.equal(normalised.rotation, 180);
+  assert.equal(normalised.owner, 'guest');
   assert.equal(normalised.version, 4);
   assert.equal(normalised.by, 'a');
 });
@@ -320,7 +329,7 @@ test('normalisePiece clamps coordinates and stamps a finite version', () => {
 function stripDocument(doc) {
   const pieces = {};
   for (const [key, p] of Object.entries(doc.pieces)) {
-    pieces[key] = { id: p.id, color: p.color, size: p.size, kind: p.kind, x: p.x, y: p.y, rotation: p.rotation };
+    pieces[key] = { id: p.id, color: p.color, size: p.size, kind: p.kind, x: p.x, y: p.y, owner: p.owner };
   }
   return {
     pieces,
@@ -332,9 +341,9 @@ test('reset returns a document equal to the initial one', () => {
   const initial = createDocument('g1');
   let doc = createDocument('g1');
   const id = pieceId('red', 1, 1);
-  doc = applyMessage(doc, buildPieceMessage(doc, id, { x: 123, y: 456 }, 'a'));
+  doc = applyMessage(doc, buildPieceMessage(doc, id, { x: 123, y: 456, owner: 'host' }, 'a'));
   doc = applyMessage(doc, buildPieceMessage(doc, id, { kind: 'star' }, 'a'));
-  doc = applyMessage(doc, buildPieceMessage(doc, pieceId('blue', 3, 3), { rotation: 180 }, 'a'));
+  doc = applyMessage(doc, buildPieceMessage(doc, pieceId('blue', 3, 3), { owner: 'guest' }, 'a'));
   doc = applyMessage(doc, buildResetMessage(doc, 'a'));
   assert.deepEqual(stripDocument(doc), stripDocument(initial));
 });
@@ -448,7 +457,7 @@ test('mergeDocuments ignores a corrupt remote-only piece', () => {
   const local = createDocument('g1');
   const remote = createDocument('g1');
   remote.pieces['purple-huge-9'] = {
-    id: 'purple-huge-9', color: 'purple', size: 9, kind: 'ship', x: 1, y: 1, rotation: 0, version: 5, by: 'b',
+    id: 'purple-huge-9', color: 'purple', size: 9, kind: 'ship', x: 1, y: 1, owner: null, version: 5, by: 'b',
   };
   const merged = mergeDocuments(local, remote);
   assert.equal(merged.pieces['purple-huge-9'], undefined);

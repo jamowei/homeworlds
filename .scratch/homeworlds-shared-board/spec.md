@@ -13,7 +13,7 @@ The players need a lightweight shared "digital table" where both can see and man
 
 ## Solution
 
-A single static page, `play.html`, in this repository, served over HTTPS (GitHub Pages). It renders the 36 Homeworlds pyramids as an SVG board ("the Bank" on the right, play field to the left). Both players connect **directly, peer-to-peer, with no server** using WebRTC DataChannels whose handshake is exchanged by copy-pasting two shareable URLs. Every board change (drag, rotate, flip, Reset, camera pan/zoom) is applied locally and streamed to the other player in real time. Each player's browser persists the full board plus camera in `localStorage`, so reloading restores the table immediately — even with no opponent connected — and reconnecting merges the two boards. The app is a **free-form digital tabletop**: it does not enforce Homeworlds rules; the humans do.
+A single static page, `play.html`, in this repository, served over HTTPS (GitHub Pages). It renders the 36 Homeworlds pyramids as an SVG board ("the Bank" on the right, play field to the left). Both players connect **directly, peer-to-peer, with no server** using WebRTC DataChannels whose handshake is exchanged by copy-pasting two shareable URLs. Every board change (drag, flip, send a piece home, Reset, camera pan/zoom) is applied locally and streamed to the other player in real time. A piece's **pointing direction shows who last moved it**: a ship always points away from its owner, towards the other player, so each player sees their own ships pointing up and the opponent's pointing down. Each player's browser persists the full board plus camera in `localStorage`, so reloading restores the table immediately — even with no opponent connected — and reconnecting merges the two boards. The app is a **free-form digital tabletop**: it does not enforce Homeworlds rules; the humans do.
 
 Everything is German UI, matching the tone, colours and dark/light theme of the existing site. No accounts, no login, no server, no tracking.
 
@@ -56,21 +56,21 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 28. As a player, I want the piece I am dragging to come to the front, so that I can see what I am moving.
 29. As a player, I want a piece to be clamped inside the world bounds, so that no piece can ever leave the table or be removed.
 
-**Rotating and flipping**
-30. As a player, I want right-clicking a triangle to toggle it between pointing up and pointing down, so that I can orient ships.
-31. As a player, I want right-clicking a star to do nothing, so that meaningless rotations are not offered.
-32. As a player, I want double-left-clicking a triangle to turn it into a square (star), so that I can create stars.
-33. As a player, I want double-left-clicking a square to turn it back into a triangle, so that I can convert a star into a ship.
-34. As a player, I want a flip to keep the piece's position, colour and size, so that only its shape changes.
-35. As a player, I want a flipped-back triangle to remember its previous orientation, so that I do not have to re-rotate it.
+**Orientation, flipping and sending pieces home**
+30. As a player, I want a ship I move to point towards my opponent, so that it is clear the piece is mine.
+31. As a player, I want my opponent's ships to point towards me, so that I can tell which pieces they moved.
+32. As a player, I want a piece's direction drawn relative to my own view (my ships point up), so that the table reads like the real one, where each player sits at their own edge.
+33. As a player, I want untouched pieces in the Bank to point up for both players, so that unclaimed pieces look neutral.
+34. As a player, I want right-clicking a piece to toggle it between triangle (ship) and square (star), so that I can build stars — on a touchscreen, long-press.
+35. As a player, I want a flip to keep the piece's position, colour and size, so that only its shape changes; a flipped-to-star has no owner (shared by both), and a star flipped back becomes a ship of the player who flipped it.
 36. As a player, I want a square to show its size pips too, so that star sizes are readable.
-37. As a touchscreen player, I want double-tap to rotate a piece, so that I have a rotation gesture without a mouse.
-38. As a touchscreen player, I want long-press to flip a piece, so that I have a flip gesture without a double-click.
+37. As a player, I want double-clicking a piece to send it home to its Bank slot as an upright ship, so that I can tidy the table — on a touchscreen, double-tap.
+38. As a player, I want a piece sent home to become neutral (belonging to nobody), so that it points up for both players until one of us moves it again.
 
 **Reset**
 39. As a player, I want a Reset button, so that I can start a new round.
 40. As a player, I want Reset to ask for confirmation first, so that I do not wipe the table by accident.
-41. As a player, I want Reset to return all 36 pieces to the ordered Bank as triangles, so that the table is exactly the initial state.
+41. As a player, I want Reset to return all 36 pieces to the ordered Bank as neutral upright triangles, so that the table is exactly the initial state, owned by nobody.
 42. As a player, I want Reset to apply on my opponent's side too, so that we stay in sync.
 
 **Camera**
@@ -116,19 +116,23 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
   - `applyMessage(document, message)` → new document, or the same document if the message is stale/invalid.
   - `mergeDocuments(local, remote)` → per-piece merge.
   - `resetDocument(document)` → initial document with the same gameId/identity metadata.
+  - `buildPieceMessage` / `buildFlipMessage` / `buildSendHomeMessage` → the local mutations (move, ship↔star, send home).
+  - `pieceFacing(piece, localRole)` → the only source of a piece's pointing direction (0 or 180), derived from the owner and the viewer's role.
   No DOM, no timers, no network, no storage in this module.
 - **`transport/*`** — thin adapters implementing one interface (`send(message)`, `onmessage`, `onstatus`): a WebRTC adapter, a BroadcastChannel adapter, and a signalling codec. Both live transports feed the *same* reducer input and are deduped by message id.
 - **`signalling`** — pure encode/decode of the connection blob to/from a URL fragment and a paste-box string (compress + base64).
-- **`storage`** — thin `localStorage` adapter (load/save document under `hw-board:<gameId>`, remember last gameId).
+- **`storage`** — thin `localStorage` adapter (load/save document under `hw-board:<gameId>`, remember last gameId, and the local role per game).
 - **`render/svg`** — SVG renderer + pointer/keyboard input handling; maps user gestures to operations and calls the reducer, then repaints. Kept deliberately dumb.
 - **`app`** — wiring: identity gate, transport setup, subscribe to reducer, autosave subscribe.
 
 ### Document model
-- Piece: `{ id, color, size, kind: 'ship'|'star', x, y, rotation }` where `rotation ∈ {0, 180}` and kind `ship` = triangle, `star` = square.
-- `id` is deterministic and encodes colour/size/copy index (e.g. `red-large-2`), so both peers construct an identical base document without transmitting it.
+- Piece: `{ id, color, size, kind: 'ship'|'star', x, y, owner }` where kind `ship` = triangle, `star` = square, and `owner ∈ {null, 'host', 'guest'}`.
+- **No rotation is stored.** `owner` records which player last moved the piece (null = neutral, e.g. still in the Bank). The direction it is drawn in is a pure function of the owner and the *viewer's* role, so the same piece points up for one player and down for the other.
+- `id` is deterministic and encodes colour/size/copy index (e.g. `red-large-2`), so both peers construct an identical base document without transmitting it. The Bank "home" slot for a piece is a pure function of its id.
 - `color ∈ {yellow, green, red, blue}`, `size ∈ {1,2,3}`.
 - Camera: `{ x, y, zoom }`, `zoom ∈ [0.25, 1]`.
 - Document also carries `gameId` and metadata; the camera is a separate LWW channel from pieces.
+- **Roles.** Each player is `host` (created the game, or playing alone) or `guest` (joined via an invite). The role is not part of the synced document: it is remembered locally (per tab, falling back to `localStorage`) and only the derived direction leaves the client. Both peers must hold opposite roles; create sets `host`, join sets `guest`.
 
 ### Layout (deterministic)
 - One logical world with a fixed size larger than a typical viewport and a visible boundary.
@@ -138,13 +142,14 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - All 36 pieces start as `kind: 'ship'`, ordered in the Bank.
 
 ### Operations & conflict resolution
-- Operations: move (drag), rotate (right-click / double-tap), flip (double-click / long-press), reset, camera set, presence/cursor.
+- Operations: move (drag), flip (right-click / long-press), send home (double-click / double-tap), reset, camera set, presence/cursor. There is no rotate operation.
+- **Ownership follows the last mover.** A move sets `owner` to the mover's role; a flip to a ship sets it to the flipper, a flip to a star sets it to null (a star is shared); send-home and Reset set it to null.
 - Every piece mutation carries a **per-piece logical version**; the receiver applies only if newer (**last-write-wins per piece**), with peer-id as tiebreak. No locking; simultaneous drags resolve by LWW and the loser's piece snaps on the next message.
-- **Drag cadence:** throttled position updates (~20–30/s) while dragging, plus a final authoritative update on release. Rotate/flip/reset send immediately.
+- **Drag cadence:** throttled position updates (~20–30/s) while dragging, plus a final authoritative update on release. Flip/send-home/reset send immediately.
 - **Camera** syncs as its own throttled LWW channel; messages are tagged with sender id to avoid echo loops.
-- **Reset** is a synced operation and requires **explicit confirmation** before it is applied/broadcast. It restores the exact initial document (all triangles, ordered).
+- **Reset** is a synced operation and requires **explicit confirmation** before it is applied/broadcast. It restores the exact initial document (all upright ships, ordered, neutral).
 - **Clamping:** piece positions are clamped to world bounds on both local input and on message application; out-of-range messages are rejected/clamped.
-- **Validation:** incoming messages are validated (known id, valid colour/size/kind/rotation, finite coordinates) before application; invalid messages are ignored.
+- **Validation:** incoming messages are validated (known id, valid colour/size/kind/owner, finite coordinates) before application; invalid messages are ignored.
 
 ### Transport & signalling
 - **True serverless P2P.** WebRTC DataChannels for cross-device; a **two-way URL exchange**: host creates an offer link, guest opens it and produces a reply link, host opens the reply to connect. STUN only (public STUN servers; no TURN, no application server).
@@ -161,11 +166,12 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - WebRTC cannot silently reconnect: resuming requires a **fresh two-way exchange**. On connect, peers exchange documents and **merge per-piece by newest version**, tie-broken by peer-id. Equal-version, offline-divergence conflicts resolve automatically.
 
 ### Interaction details (settled)
-- Triangles: right-click toggles 0°/180°; squares ignore rotation but remember the angle that survives a flip.
-- Double-click flips triangle↔square, anchored at the piece's centre, preserving colour/size; pips centred on both shapes (1/2/3 dots) and the shape grows with size.
+- **Direction shows ownership.** A ship points away from its owner, towards the other player: on your screen your own ships point up and the opponent's point down; the same ship points the other way on your opponent's screen. Untouched/Bank ships point up for both.
+- **Flip:** right-click toggles triangle↔square, anchored at the piece's centre, preserving colour/size — on a touchscreen, long-press. A star is neutral (shared by both); a star flipped back is a ship of the player who flipped it.
+- **Send home:** double-click returns a piece to its original Bank slot as an upright, neutral ship — on a touchscreen, double-tap. No confirmation (it is undone by dragging the piece out again).
 - Free drag, overlap allowed, dragged piece brought to front. No snapping, no true stacking, no multi-select (see Out of Scope).
-- Camera: shared pan+zoom; wheel / pinch; anchored at cursor; 25%–100% (current level shown in the toolbar); no independent free-look.
-- Touch: drag = move, **double-tap = rotate**, **long-press = flip**, pinch = zoom, background drag = pan.
+- Camera: shared pan+zoom; wheel / pinch; anchored at cursor; 25%–100% (current level shown in the toolbar); independent of the per-player piece direction; no independent free-look.
+- Touch: drag = move, **double-tap = send home**, **long-press = flip**, pinch = zoom, background drag = pan.
 - Presence: opponent cursor, opponent drag highlight, connection status, all labelled with the opponent's name.
 - **Name is mandatory** before creating or joining a game; default suggestion "Gast".
 
@@ -174,14 +180,14 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - Header is just "Homeworlds" — no subheading and no bottom-nav links.
 - Toolbar shows the connection status and the current zoom level, plus the "Steuerung", "Verbindung erneuern" and "Zurücksetzen" buttons.
 - The invite panel and the JSON exchange panel collapse (fold) so the board gets the space; "Board als JSON austauschen" sits below the board.
-- A "Steuerung" dialog lists every action (move, rotate, flip, reset, zoom, pan, connect) so a new player learns the gestures.
+- A "Steuerung" dialog lists every action (move, flip, send home, reset, zoom, pan, connect) so a new player learns the gestures.
 
 ## Testing Decisions
 
 **What makes a good test:** test external behaviour of the pure modules — the visible consequences of inputs (documents in, documents out) — never their internals. A test should be able to change the SVG renderer, the WebRTC adapter, or `localStorage` wiring completely and still pass, because those are not where the logic lives.
 
 **Seams (the primary seam is deliberately the only nontrivial one):**
-- **`core/state`** — target of the bulk of the tests: deterministic initial document and Bank layout; move/clamp; rotate; flip preserving position/colour/size and restoring orientation; Reset; per-piece LWW (newer wins, older ignored); tiebreak; camera LWW; `mergeDocuments`; message validation (bad id, bad colour, NaN coords, unknown kind). Run with `node --test`.
+- **`core/state`** — target of the bulk of the tests: deterministic initial document and Bank layout; move/clamp and ownership; flip preserving position/colour/size and ownership rules; `pieceFacing` (own/opponent/neutral, stars); send-home returning to slot as a neutral ship; Reset; per-piece LWW (newer wins, older ignored); tiebreak; camera LWW; `mergeDocuments`; message validation (bad id, bad colour, NaN coords, unknown kind/owner). Run with `node --test`.
 - **`signalling`** — pure codec round-trip: blob → URL/paste string → blob is identity; malformed input is rejected.
 - **Transport / storage / renderer** — thin shells over the reducer; verified by a small number of integration checks (BroadcastChannel end-to-end in one browser) and manual use, not unit tests.
 

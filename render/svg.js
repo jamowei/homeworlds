@@ -4,7 +4,7 @@
 // a document to shapes and maps user gestures to operations, emitting them via
 // `onOperation`. It contains no game logic and never mutates the document.
 
-import { WORLD, BANK, bankLayout, COLORS, SIZES, clamp, clampZoom, MIN_ZOOM, MAX_ZOOM } from '../core/state.js';
+import { WORLD, BANK, bankLayout, COLORS, SIZES, clamp, clampZoom, MIN_ZOOM, MAX_ZOOM, pieceFacing } from '../core/state.js';
 
 export const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -69,6 +69,9 @@ export function zoomAround(camera, view, px, py, nextZoom) {
 
 export function createRenderer(svg, options = {}) {
   const emit = typeof options.onOperation === 'function' ? options.onOperation : () => {};
+  // The local player's role, read lazily on every paint: a ship's direction is
+  // derived from its owner and this role, so it must be current when rendering.
+  const getLocalRole = typeof options.getLocalRole === 'function' ? options.getLocalRole : () => 'host';
   let board = null;
   let draggingId = null;
   const remotePresence = { cursor: null, draggingId: null, name: '' };
@@ -229,10 +232,13 @@ export function createRenderer(svg, options = {}) {
 
   function renderPiece(piece) {
     const size = pieceSize(piece.size);
+    // Direction is per viewer: a ship points up for its owner and down for the
+    // other player. Never read a stored rotation — none is kept.
+    const rotation = pieceFacing(piece, getLocalRole());
     const group = el('g', {
       class: `piece piece-${piece.kind} color-${piece.color}`,
       'data-id': piece.id,
-      transform: `translate(${piece.x} ${piece.y}) rotate(${piece.rotation})`,
+      transform: `translate(${piece.x} ${piece.y}) rotate(${rotation})`,
     });
 
     if (piece.kind === 'star') {
@@ -260,7 +266,7 @@ export function createRenderer(svg, options = {}) {
 
     // Size pips (1/2/3 dots), centred on the piece for visibility, in an
     // unrotated sub-group so they stay upright whichever way the piece points.
-    const pips = el('g', { class: 'piece-pips', transform: `rotate(${-piece.rotation})` });
+    const pips = el('g', { class: 'piece-pips', transform: `rotate(${-rotation})` });
     const gap = size * 0.16;
     const startY = -((piece.size - 1) * gap) / 2;
     for (let i = 0; i < piece.size; i++) {
@@ -481,10 +487,10 @@ export function createRenderer(svg, options = {}) {
       if (moved) {
         emitMove(drag.id, event, true);
       } else if (drag.pointerType === 'touch') {
-        // A still tap: a second one shortly after rotates the piece.
+        // A still tap: a second one shortly after sends the piece home.
         const now = Date.now();
         if (lastTouchTap && lastTouchTap.id === drag.id && now - lastTouchTap.time < DOUBLE_TAP_MS) {
-          emit({ type: 'rotate', id: drag.id });
+          emit({ type: 'send-home', id: drag.id });
           lastTouchTap = null;
         } else {
           lastTouchTap = { id: drag.id, time: now };
@@ -509,21 +515,20 @@ export function createRenderer(svg, options = {}) {
   svg.addEventListener('pointerup', endPointer);
   svg.addEventListener('pointercancel', endPointer);
 
-  // Right-click a triangle toggles its orientation; squares ignore it.
+  // Right-click flips a piece between triangle (ship) and square (star).
   svg.addEventListener('contextmenu', (event) => {
     const id = pieceFromEvent(event);
     if (!id) return;
     event.preventDefault();
-    const piece = board?.pieces?.[id];
-    if (piece && piece.kind === 'ship') emit({ type: 'rotate', id });
+    emit({ type: 'flip', id });
   });
 
-  // Double-click flips a triangle into a square and back.
+  // Double-click sends a piece back home to its Bank slot.
   svg.addEventListener('dblclick', (event) => {
     const id = pieceFromEvent(event);
     if (!id) return;
     event.preventDefault();
-    emit({ type: 'flip', id });
+    emit({ type: 'send-home', id });
   });
 
   svg.addEventListener(

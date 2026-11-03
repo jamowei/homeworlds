@@ -6,7 +6,7 @@
 //
 // It reuses the very same validation as the sync reducer (`isValidPiece` /
 // `isValidCamera`), so a hand-copied board obeys exactly the rules a network
-// message does: only known ids, valid colour/size/kind/rotation and finite
+// message does: only known ids, valid colour/size/kind/owner and finite
 // coordinates survive, and corrupt JSON is refused outright. No DOM, no
 // storage, no network live here.
 //
@@ -67,7 +67,7 @@ export function importDocument(json, { fallbackGameId = 'local' } = {}) {
     for (const [id, piece] of Object.entries(data.pieces)) {
       if (!piece || piece.id !== id) continue;
       // The same normaliser the sync reducer uses: known id, immutable
-      // identity, valid kind/rotation, finite clamped coordinates.
+      // identity, valid kind/owner, finite clamped coordinates.
       const normalised = normalisePiece(piece, base.pieces[id]);
       if (normalised) base.pieces[id] = normalised;
     }
