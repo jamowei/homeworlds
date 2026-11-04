@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Homeworlds">
+  <title>Homeworlds</title>
+  <defs>
+    <!-- One rocket, nose up, engine at the bottom. Filled per use. -->
+    <g id="rocket">
+      <path d="M0-10.5C2.6-7.4 3.8-4 3.8-1.2V3.4H-3.8V-1.2C-3.8-4-2.6-7.4 0-10.5Z"/>
+      <path d="M3.8.8C5.2 2.6 5.9 4.4 6.2 6.4H3.8Z"/>
+      <path d="M-3.8.8C-5.2 2.6-5.9 4.4-6.2 6.4H-3.8Z"/>
+      <path d="M2.4 3.4V4.9A2.4 2 0 0 1 0 6.9A2.4 2 0 0 1-2.4 4.9V3.4Z"/>
+    </g>
+  </defs>
+  <circle cx="32" cy="32" r="32" fill="#0f1420"/>
+  <!-- Four rockets ringed around the centre, noses pointing inwards and engines out.
+       Each is placed below the centre (translate 32 49.5) so its nose faces the middle,
+       then rotated into place: red on top, then clockwise yellow, green, blue. -->
+  <use href="#rocket" fill="#e74c3c" transform="rotate(180 32 32) translate(32 49.5) scale(1.15)"/>
+  <use href="#rocket" fill="#f1c40f" transform="rotate(270 32 32) translate(32 49.5) scale(1.15)"/>
+  <use href="#rocket" fill="#2ecc71" transform="rotate(0 32 32) translate(32 49.5) scale(1.15)"/>
+  <use href="#rocket" fill="#3498db" transform="rotate(90 32 32) translate(32 49.5) scale(1.15)"/>
+</svg>
