@@ -16,6 +16,6 @@
 // never stored here. Leave both fields empty to stay STUN-only.
 
 export const TURN_CONFIG = {
-  domain: '', // e.g. 'yourappname.metered.live'
-  apiKey: '', // the credential-scoped API key
+  domain: 'homeworlds.metered.live', // e.g. 'yourappname.metered.live'
+  apiKey: '347fc0bfb42cf39408a4834895ff9542e5e1', // the credential-scoped API key
 };
