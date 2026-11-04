@@ -23,9 +23,10 @@ import { createStore } from './storage/store.js';
 import { createHub } from './transport/hub.js';
 import { createBroadcastTransport } from './transport/broadcast.js';
 import { createPeerRegistry } from './transport/peers.js';
-import { createWebRtcTransport, isWebRtcSupported } from './transport/webrtc.js';
+import { createWebRtcTransport, isWebRtcSupported, DEFAULT_ICE_SERVERS, fetchMeteredIceServers, mergeIceServers } from './transport/webrtc.js';
 import { encodeFragment, decodeFragment, encodePaste, decodePaste } from './signalling/codec.js';
 import { exportDocument, importDocument } from './core/io.js';
+import { TURN_CONFIG } from './turn.config.js';
 
 const SAVE_DEBOUNCE_MS = 300;
 const NAME_KEY = 'hw-name';
@@ -43,6 +44,21 @@ const bankSvg = $('bank');
 const statusEl = $('status');
 const zoomEl = $('zoom-level');
 const store = createStore();
+
+// --- ICE servers (STUN always, optional Metered TURN) -------------------
+//
+// Public STUN servers connect most peers directly. When a Metered TURN relay is
+// configured in `turn.config.js`, its credential-scoped API key fetches a full
+// ICE array at load; the fetch is awaited just before the first peer connection,
+// and any failure falls back to STUN only. Trying STUN first keeps the relay
+// (and its bandwidth quota) for the connections that actually need it.
+const iceServersReady = (async () => {
+  const turn = await fetchMeteredIceServers(TURN_CONFIG || {});
+  return turn && turn.length ? mergeIceServers(DEFAULT_ICE_SERVERS, turn) : DEFAULT_ICE_SERVERS;
+})();
+async function getIceServers() {
+  return iceServersReady;
+}
 
 // --- Identity -----------------------------------------------------------
 
@@ -506,7 +522,7 @@ async function reconnect() {
   showError('gate-error', '');
   setBusy(true, 'Neue Einladung wird vorbereitet …');
   try {
-    const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
+    const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId, iceServers: await getIceServers() }));
     const offer = await transport.createOffer();
     showGate(false);
     showHandshake({
@@ -538,7 +554,7 @@ async function createGame() {
     switchGame(newGameId(), { fresh: true });
     setLocalRole('host');
     setActive(true);
-    const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
+    const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId, iceServers: await getIceServers() }));
     const offer = await transport.createOffer();
     showGate(false);
     showHandshake({
@@ -568,7 +584,7 @@ async function joinAsGuest(offerBlob) {
     switchGame(offerBlob.gameId);
     setLocalRole('guest');
     setActive(true);
-    const transport = attachWebRtc(createWebRtcTransport({ role: 'guest', gameId: offerBlob.gameId }));
+    const transport = attachWebRtc(createWebRtcTransport({ role: 'guest', gameId: offerBlob.gameId, iceServers: await getIceServers() }));
     const answer = await transport.createAnswer(offerBlob);
     showGate(false);
     showHandshake({

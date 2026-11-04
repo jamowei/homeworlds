@@ -23,6 +23,76 @@ export const DEFAULT_ICE_SERVERS = Object.freeze([
   { urls: 'stun:global.stun.twilio.com:3478' },
 ]);
 
+// --- Optional TURN relay (Metered) ---------------------------------------
+//
+// STUN alone cannot traverse a symmetric NAT; a TURN relay can. Metered exposes
+// a REST endpoint that returns a ready `iceServers` array (STUN + TURN with
+// username/credential) for a *credential-scoped* API key. That key is safe to
+// ship in front-end code: it only unlocks the one credential, and the password
+// is fetched at runtime rather than committed.
+
+const METERED_CREDENTIALS_PATH = '/api/v1/turn/credentials';
+
+// Build the Metered credentials URL from a bare domain (`app.metered.live`).
+// Returns null when the config is incomplete, so callers fall back to STUN.
+export function meteredCredentialsUrl(domain, apiKey) {
+  const host = String(domain || '')
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/+$/, '');
+  const key = String(apiKey || '').trim();
+  if (!host || !key) return null;
+  return `https://${host}${METERED_CREDENTIALS_PATH}?apiKey=${encodeURIComponent(key)}`;
+}
+
+// Keep only the fields `RTCPeerConnection` understands, and drop an entry that
+// has no usable url.
+function normaliseIceServer(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const urls = entry.urls;
+  if (typeof urls !== 'string' || !urls) return null;
+  const server = { urls };
+  if (typeof entry.username === 'string' && entry.username) server.username = entry.username;
+  if (typeof entry.credential === 'string' && entry.credential) server.credential = entry.credential;
+  return server;
+}
+
+// Merge server lists, dropping duplicates by `urls` (first list wins). Public
+// STUN servers are passed first, so a relay's own STUN entry never displaces
+// them.
+export function mergeIceServers(...lists) {
+  const byUrls = new Map();
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const raw of list) {
+      const server = normaliseIceServer(raw);
+      if (server && !byUrls.has(server.urls)) byUrls.set(server.urls, server);
+    }
+  }
+  return [...byUrls.values()];
+}
+
+// Fetch the Metered ICE array, or null on any problem (missing config, network
+// error, timeout, malformed body). Never throws: the caller then uses STUN only.
+export async function fetchMeteredIceServers({ domain, apiKey, fetchImpl, timeoutMs = 5000 } = {}) {
+  const url = meteredCredentialsUrl(domain, apiKey);
+  if (!url) return null;
+  const doFetch = fetchImpl || globalThis.fetch;
+  if (typeof doFetch !== 'function') return null;
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    const response = await doFetch(url, controller ? { signal: controller.signal } : undefined);
+    if (!response || !response.ok) return null;
+    const data = await response.json();
+    return Array.isArray(data) ? data : null;
+  } catch {
+    return null;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 const GATHER_TIMEOUT_MS = 4000;
 
 function waitForIceGathering(pc) {

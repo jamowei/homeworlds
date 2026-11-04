@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createWebRtcTransport, isWebRtcSupported, DEFAULT_ICE_SERVERS } from './webrtc.js';
+import { createWebRtcTransport, isWebRtcSupported, DEFAULT_ICE_SERVERS, meteredCredentialsUrl, mergeIceServers, fetchMeteredIceServers } from './webrtc.js';
 
 test('the ICE configuration is STUN only (no TURN relay)', () => {
   for (const server of DEFAULT_ICE_SERVERS) {
@@ -42,4 +42,67 @@ test('a transport is not connected before the handshake', () => {
   assert.equal(transport.isConnected(), false);
   assert.equal(transport.role, 'host');
   transport.close();
+});
+
+test('the Metered credentials URL is built from the domain and key', () => {
+  assert.equal(
+    meteredCredentialsUrl('myapp.metered.live', 'KEY123'),
+    'https://myapp.metered.live/api/v1/turn/credentials?apiKey=KEY123',
+  );
+  assert.equal(
+    meteredCredentialsUrl('https://myapp.metered.live/', 'KEY123'),
+    'https://myapp.metered.live/api/v1/turn/credentials?apiKey=KEY123',
+  );
+  assert.equal(meteredCredentialsUrl('', 'KEY'), null, 'no domain');
+  assert.equal(meteredCredentialsUrl('myapp.metered.live', ''), null, 'no key');
+});
+
+test('merging ICE servers keeps the first list and drops duplicates and junk', () => {
+  const merged = mergeIceServers(
+    [{ urls: 'stun:stun.l.google.com:19302' }],
+    [
+      { urls: 'stun:stun.l.google.com:19302' }, // duplicate url: ignored
+      { urls: 'stun:stun.relay.metered.ca:80' },
+      { urls: 'turn:standard.relay.metered.ca:80', username: 'u', credential: 'p' },
+      { urls: 123 }, // malformed: dropped
+      null,
+    ],
+  );
+  assert.deepEqual(merged, [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    { urls: 'turn:standard.relay.metered.ca:80', username: 'u', credential: 'p' },
+  ]);
+});
+
+test('fetching Metered ICE servers returns the array, or null on any problem', async () => {
+  const servers = [{ urls: 'turn:standard.relay.metered.ca:80', username: 'u', credential: 'p' }];
+  const fakeFetch = (payload, ok = true) => async () => ({ ok, json: async () => payload });
+
+  assert.deepEqual(
+    await fetchMeteredIceServers({ domain: 'myapp.metered.live', apiKey: 'k', fetchImpl: fakeFetch(servers) }),
+    servers,
+  );
+  assert.equal(await fetchMeteredIceServers({ domain: '', apiKey: 'k' }), null, 'incomplete config');
+  assert.equal(
+    await fetchMeteredIceServers({ domain: 'd', apiKey: 'k', fetchImpl: fakeFetch(servers, false) }),
+    null,
+    'non-ok response',
+  );
+  assert.equal(
+    await fetchMeteredIceServers({ domain: 'd', apiKey: 'k', fetchImpl: fakeFetch({ not: 'an array' }) }),
+    null,
+    'malformed body',
+  );
+  assert.equal(
+    await fetchMeteredIceServers({
+      domain: 'd',
+      apiKey: 'k',
+      fetchImpl: async () => {
+        throw new Error('network down');
+      },
+    }),
+    null,
+    'throwing fetch',
+  );
 });
