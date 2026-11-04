@@ -15,7 +15,7 @@ import {
   buildSendHomeMessage,
   messageId,
   mergeDocuments,
-  migrateWorldWidth,
+  migrateBoard,
 } from './core/state.js';
 import { createRenderer } from './render/svg.js';
 import { buildCursorMessage, buildDragMessage, readPresence } from './presence/messages.js';
@@ -35,6 +35,7 @@ const PEER_ID = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36)
 
 const $ = (id) => document.getElementById(id);
 const svg = $('board');
+const bankSvg = $('bank');
 const statusEl = $('status');
 const zoomEl = $('zoom-level');
 const store = createStore();
@@ -97,10 +98,14 @@ let localRole = readRole(gameId);
 const saved = store.loadDocument(gameId);
 // A board saved before the world was widened keeps its Bank pieces at the old
 // coordinates; re-home them so they line up with the current Bank.
-const restored = saved && saved.pieces && saved.camera ? migrateWorldWidth(saved) : null;
+const restored = saved && saved.pieces && saved.camera ? migrateBoard(saved) : null;
 let doc = restored || createDocument(gameId);
 
-const renderer = createRenderer(svg, { onOperation: handleOperation, getLocalRole: () => localRole });
+const renderer = createRenderer(svg, {
+  bankSvg,
+  onOperation: handleOperation,
+  getLocalRole: () => localRole,
+});
 
 // Switch the local role (create/join) and repaint, since every ship's direction
 // depends on it.
@@ -561,7 +566,7 @@ function importBoard() {
     useBroadcast(gameId);
   }
   // An imported board from before the world was widened needs re-homing too.
-  setDocument(migrateWorldWidth(restored));
+  setDocument(migrateBoard(restored));
 }
 
 // --- Local operations ---------------------------------------------------
@@ -598,8 +603,17 @@ renderer.render(doc);
 updateZoom();
 requestAnimationFrame(() => {
   renderer.measure();
-  // No saved board: fit the whole world (Bank included) on screen immediately.
-  if (!restored) renderer.fitToWorld();
+  if (!restored) {
+    // No saved board: fit the play field on screen immediately.
+    renderer.fitToWorld();
+    return;
+  }
+  // A restored camera may predate the current play field (the world or the
+  // Bank may have changed); keep it inside so the Bank stays off the board.
+  const camera = renderer.clampCamera(doc.camera);
+  if (camera.x !== doc.camera.x || camera.y !== doc.camera.y || camera.zoom !== doc.camera.zoom) {
+    setDocument({ ...doc, camera: { ...doc.camera, ...camera } });
+  }
 });
 
 addEventListener('pagehide', flushSave);

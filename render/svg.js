@@ -3,8 +3,27 @@
 // Deliberately dumb SVG renderer plus pointer/keyboard input handling. It maps
 // a document to shapes and maps user gestures to operations, emitting them via
 // `onOperation`. It contains no game logic and never mutates the document.
+//
+// The board and the Bank are two SVGs sharing one document: the board is a
+// pan/zoom window onto the play field, the Bank is a fixed window onto the
+// Bank strip. Each renders every piece and its viewBox clips the rest. The
+// world coordinates are the single source of truth, so sync and persistence
+// are unchanged.
 
-import { WORLD, BANK, bankLayout, COLORS, SIZES, clamp, clampZoom, MIN_ZOOM, MAX_ZOOM, pieceFacing } from '../core/state.js';
+import {
+  WORLD,
+  BANK,
+  bankLayout,
+  bankStrip,
+  playfieldWidth,
+  COLORS,
+  SIZES,
+  clamp,
+  clampZoom,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  pieceFacing,
+} from '../core/state.js';
 
 export const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -87,57 +106,108 @@ export function zoomAround(camera, view, px, py, nextZoom) {
   };
 }
 
-export function createRenderer(svg, options = {}) {
+// Map a point in a fixed-viewBox SVG (the Bank) to and from world coordinates.
+// `rect` is the element's client rect; `preserveAspectRatio="xMidYMid meet"` is
+// honoured the same way the browser lays it out, so a point under the cursor
+// lands on the right world spot even before the panel matches the viewBox.
+function viewBoxMapping(vb, rect) {
+  const scale = Math.min(rect.width / vb.w, rect.height / vb.h) || 1;
+  return {
+    scale,
+    offsetX: (rect.width - vb.w * scale) / 2,
+    offsetY: (rect.height - vb.h * scale) / 2,
+  };
+}
+
+function viewBoxToWorld(vb, rect, px, py) {
+  const { scale, offsetX, offsetY } = viewBoxMapping(vb, rect);
+  return { x: vb.x + (px - offsetX) / scale, y: vb.y + (py - offsetY) / scale };
+}
+
+function worldToViewBox(vb, rect, wx, wy) {
+  const { scale, offsetX, offsetY } = viewBoxMapping(vb, rect);
+  return { x: offsetX + (wx - vb.x) * scale, y: offsetY + (wy - vb.y) * scale };
+}
+
+function within(rect, x, y) {
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
+export function createRenderer(boardSvg, options = {}) {
   const emit = typeof options.onOperation === 'function' ? options.onOperation : () => {};
   // The local player's role, read lazily on every paint: a ship's direction is
   // derived from its owner and this role, so it must be current when rendering.
   const getLocalRole = typeof options.getLocalRole === 'function' ? options.getLocalRole : () => 'host';
+  const bankSvg = options.bankSvg || null;
   let board = null;
   let draggingId = null;
   const remotePresence = { cursor: null, draggingId: null, name: '' };
-  let view = { w: svg.clientWidth || 960, h: svg.clientHeight || 640 };
+  let view = { w: boardSvg.clientWidth || 960, h: boardSvg.clientHeight || 640 };
 
   // The table edge: a fixed rectangle in world coordinates, so it pans and
-  // zooms with the camera and marks exactly where the field ends.
+  // zooms with the board camera and marks exactly where the field ends. It is
+  // the play field only — the Bank lives outside it, in its own panel.
   const boundary = el('rect', {
     class: 'board-boundary',
     x: 0,
     y: 0,
-    width: WORLD.width,
+    width: playfieldWidth(),
     height: WORLD.height,
   });
   const slots = el('g', { class: 'bank-slots' });
-  const pieces = el('g', { class: 'board-pieces' });
+  const boardPieces = el('g', { class: 'board-pieces' });
+  const bankPieces = el('g', { class: 'bank-pieces' });
   // Opponent presence (cursor + drag highlight) lives above the pieces and is
-  // never part of the document.
-  const presenceLayer = el('g', { class: 'presence-layer' });
+  // never part of the document. Drawn in both windows so a peer over the Bank
+  // is visible there too.
+  const boardPresence = el('g', { class: 'presence-layer' });
+  const bankPresence = el('g', { class: 'presence-layer' });
 
+  // Clamp everything on the board to the play field. The camera is clamped to
+  // the same rectangle, but when zoomed out past it the viewBox spreads beyond
+  // the field; this clip keeps Bank pieces from leaking onto the board there.
+  const clipId = `hw-playfield-${Math.random().toString(36).slice(2)}`;
+  const defs = el('defs');
+  const clip = el('clipPath', { id: clipId });
+  clip.appendChild(el('rect', { x: 0, y: 0, width: playfieldWidth(), height: WORLD.height }));
+  defs.appendChild(clip);
+  boardPieces.setAttribute('clip-path', `url(#${clipId})`);
+  boardPresence.setAttribute('clip-path', `url(#${clipId})`);
+
+  // One static backdrop per Bank cell. The three overlapping copies sit inside
+  // it; nothing reflows when a copy is taken.
   const layout = bankLayout();
   for (const color of COLORS) {
     for (const size of SIZES) {
       const cell = layout.cellFor(color, size);
-      const s = pieceSize(size);
-      const slotW = s + 14;
-      const slotH = s * 1.24 + 16; // tall enough for a triangle of this size
-      for (let copy = 0; copy < BANK.copies; copy++) {
-        slots.appendChild(
-          el('rect', {
-            x: cell.centerX + BANK.copyOffsets[copy] - slotW / 2,
-            y: cell.centerY - slotH / 2,
-            width: slotW,
-            height: slotH,
-            rx: 8,
-            class: 'bank-slot',
-          }),
-        );
-      }
+      const cellW = BANK.cellWidth - 12;
+      const cellH = BANK.cellHeight - 12;
+      slots.appendChild(
+        el('rect', {
+          x: cell.centerX - cellW / 2,
+          y: cell.centerY - cellH / 2,
+          width: cellW,
+          height: cellH,
+          rx: 12,
+          class: 'bank-slot',
+        }),
+      );
     }
   }
 
-  svg.appendChild(boundary);
-  svg.appendChild(slots);
-  svg.appendChild(pieces);
-  svg.appendChild(presenceLayer);
+  boardSvg.appendChild(defs);
+  boardSvg.appendChild(boundary);
+  boardSvg.appendChild(boardPieces);
+  boardSvg.appendChild(boardPresence);
+  if (bankSvg) {
+    bankSvg.appendChild(slots);
+    bankSvg.appendChild(bankPieces);
+    bankSvg.appendChild(bankPresence);
+  }
+
+  function currentCamera() {
+    return board ? board.camera : { x: playfieldWidth() / 2, y: WORLD.height / 2, zoom: 1 };
+  }
 
   function updateViewBox() {
     if (!board) return;
@@ -146,9 +216,76 @@ export function createRenderer(svg, options = {}) {
     const h = view.h / cam.zoom;
     const x = cam.x - w / 2;
     const y = cam.y - h / 2;
-    svg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
-    // `boundary` is pinned in world coordinates (see above), so it needs no
-    // update here: it moves with the viewBox and marks the real table edge.
+    boardSvg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+  }
+
+  // The Bank window is pinned to the Bank strip. Its viewBox is expanded (and
+  // only expanded) to match the panel's aspect ratio, so the content is never
+  // cropped and the screen↔world mapping stays uniform.
+  function bankViewBox() {
+    const strip = bankStrip();
+    const margin = 36;
+    let x = strip.x - margin;
+    let y = strip.y - margin;
+    let w = strip.width + margin * 2;
+    let h = strip.height + margin * 2;
+    if (bankSvg) {
+      const rect = bankSvg.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const aspect = rect.width / rect.height;
+        if (w / h < aspect) {
+          const nextW = h * aspect;
+          x -= (nextW - w) / 2;
+          w = nextW;
+        } else if (w / h > aspect) {
+          const nextH = w / aspect;
+          y -= (nextH - h) / 2;
+          h = nextH;
+        }
+      }
+    }
+    return { x, y, w, h };
+  }
+
+  function updateBankViewBox() {
+    if (!bankSvg) return;
+    const vb = bankViewBox();
+    bankSvg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  }
+
+  // Which panel is a client point over? Falls back to the nearer panel when the
+  // point is outside both (e.g. in the gap or the surrounding page).
+  function panelAt(clientX, clientY) {
+    const bRect = boardSvg.getBoundingClientRect();
+    if (within(bRect, clientX, clientY)) return 'board';
+    if (!bankSvg) return 'board';
+    const kRect = bankSvg.getBoundingClientRect();
+    if (within(kRect, clientX, clientY)) return 'bank';
+    const bMid = (bRect.left + bRect.right) / 2;
+    const kMid = (kRect.left + kRect.right) / 2;
+    return Math.abs(clientX - bMid) <= Math.abs(clientX - kMid) ? 'board' : 'bank';
+  }
+
+  function toWorld(clientX, clientY) {
+    if (bankSvg && panelAt(clientX, clientY) === 'bank') {
+      const rect = bankSvg.getBoundingClientRect();
+      return viewBoxToWorld(bankViewBox(), rect, clientX - rect.left, clientY - rect.top);
+    }
+    const rect = boardSvg.getBoundingClientRect();
+    return screenToWorld(currentCamera(), view, clientX - rect.left, clientY - rect.top);
+  }
+
+  // The client position a piece is drawn at in a given panel. Used to keep the
+  // grab offset consistent while a drag crosses the board ↔ Bank seam.
+  function pieceScreen(piece, panel) {
+    if (bankSvg && panel === 'bank') {
+      const rect = bankSvg.getBoundingClientRect();
+      const p = worldToViewBox(bankViewBox(), rect, piece.x, piece.y);
+      return { x: rect.left + p.x, y: rect.top + p.y };
+    }
+    const rect = boardSvg.getBoundingClientRect();
+    const p = worldToScreen(currentCamera(), view, piece.x, piece.y);
+    return { x: rect.left + p.x, y: rect.top + p.y };
   }
 
   // Set once a fit is requested before the board has a size; the first valid
@@ -157,7 +294,7 @@ export function createRenderer(svg, options = {}) {
   let pendingFit = false;
 
   function measure() {
-    const rect = svg.getBoundingClientRect();
+    const rect = boardSvg.getBoundingClientRect();
     if (rect.width > 0 && rect.height > 0) {
       view = { w: rect.width, h: rect.height };
     }
@@ -166,27 +303,19 @@ export function createRenderer(svg, options = {}) {
       fitToWorld();
     }
     updateViewBox();
+    updateBankViewBox();
   }
 
   function pointerPx(event) {
-    const rect = svg.getBoundingClientRect();
+    const rect = boardSvg.getBoundingClientRect();
     return { px: event.clientX - rect.left, py: event.clientY - rect.top, rect };
   }
 
-  function toWorld(clientX, clientY) {
-    const rect = svg.getBoundingClientRect();
-    return screenToWorld(currentCamera(), view, clientX - rect.left, clientY - rect.top);
-  }
-
-  function currentCamera() {
-    return board ? board.camera : { x: WORLD.width / 2, y: WORLD.height / 2, zoom: 1 };
-  }
-
-  // Every camera that leaves the renderer is first clamped to the world, so a
-  // player can never pan the field off-screen and the synced value is always
-  // valid. `view` is read at call time, so it tracks resizes.
+  // Every camera that leaves the renderer is first clamped to the play field,
+  // so a player can never pan the field off-screen (and the Bank panel can
+  // never bleed into the board). `view` is read at call time, so it resizes.
   function clampCurrent(camera) {
-    return clampCamera(camera, view, WORLD);
+    return clampCamera(camera, view, { width: playfieldWidth(), height: WORLD.height });
   }
 
   function emitCamera(camera) {
@@ -316,31 +445,37 @@ export function createRenderer(svg, options = {}) {
 
   function render(nextBoard) {
     board = nextBoard;
-    pieces.replaceChildren();
+    boardPieces.replaceChildren();
+    bankPieces.replaceChildren();
     const all = Object.values(board.pieces);
     // The piece being dragged is drawn last so it sits above the others.
     all.sort((a, b) => (a.id === draggingId ? 1 : 0) - (b.id === draggingId ? 1 : 0));
     for (const piece of all) {
       const node = renderPiece(piece);
       if (piece.id === draggingId) node.classList.add('dragging');
-      pieces.appendChild(node);
+      boardPieces.appendChild(node);
+      if (bankSvg) {
+        const bankNode = renderPiece(piece);
+        if (piece.id === draggingId) bankNode.classList.add('dragging');
+        bankPieces.appendChild(bankNode);
+      }
     }
     applyDragHighlight();
     updateViewBox();
+    updateBankViewBox();
   }
 
   // --- Opponent presence --------------------------------------------------
 
   function applyDragHighlight() {
-    for (const node of pieces.children) {
-      node.classList.toggle('remote-dragging', node.dataset.id === remotePresence.draggingId);
+    for (const layer of [boardPieces, bankPieces]) {
+      for (const node of layer.children) {
+        node.classList.toggle('remote-dragging', node.dataset.id === remotePresence.draggingId);
+      }
     }
   }
 
-  function renderPresence() {
-    presenceLayer.replaceChildren();
-    const { cursor, name } = remotePresence;
-    if (!cursor) return;
+  function presenceMarker(cursor, name) {
     const group = el('g', {
       class: 'remote-cursor',
       transform: `translate(${cursor.x} ${cursor.y})`,
@@ -356,7 +491,16 @@ export function createRenderer(svg, options = {}) {
       label.textContent = name;
       group.appendChild(label);
     }
-    presenceLayer.appendChild(group);
+    return group;
+  }
+
+  function renderPresence() {
+    boardPresence.replaceChildren();
+    bankPresence.replaceChildren();
+    const { cursor, name } = remotePresence;
+    if (!cursor) return;
+    boardPresence.appendChild(presenceMarker(cursor, name));
+    if (bankSvg) bankPresence.appendChild(presenceMarker(cursor, name));
   }
 
   // Update what we know about the opponent. Each key is optional; `cursor` is
@@ -371,8 +515,10 @@ export function createRenderer(svg, options = {}) {
 
   // --- Pointer input ------------------------------------------------------
   //
-  // One pointer drags a piece (move) or pans the background; two pointers
-  // pinch-zoom.
+  // One pointer drags a piece (move) or pans the board; two pointers
+  // pinch-zoom. Drags are tracked in screen space, so a piece can be pulled
+  // across the board ↔ Bank seam: the panel under the piece decides how the
+  // screen maps to world.
 
   let pan = null;
   let drag = null;
@@ -389,29 +535,15 @@ export function createRenderer(svg, options = {}) {
     return node && node.dataset.id ? node.dataset.id : null;
   }
 
-  function emitMove(id, event, final) {
-    const world = toWorld(event.clientX, event.clientY);
-    const op = {
-      type: 'move',
-      id,
-      x: world.x + drag.offsetX,
-      y: world.y + drag.offsetY,
-      final: !!final,
-    };
-    if (final) {
-      // The release is authoritative: drop any throttled intermediate and send
-      // the exact final position.
-      moveThrottle.cancel();
-      emit(op);
-    } else {
-      moveThrottle.push(op);
-    }
+  function emitMove(id, event) {
+    const world = toWorld(event.clientX + drag.offsetX, event.clientY + drag.offsetY);
+    moveThrottle.push({ type: 'move', id, x: world.x, y: world.y });
   }
 
   function startDrag(id, event) {
     const piece = board?.pieces?.[id];
     if (!piece) return;
-    const world = toWorld(event.clientX, event.clientY);
+    const screen = pieceScreen(piece, panelAt(event.clientX, event.clientY));
     drag = {
       id,
       pointerId: event.pointerId,
@@ -419,8 +551,9 @@ export function createRenderer(svg, options = {}) {
       startX: event.clientX,
       startY: event.clientY,
       moved: false,
-      offsetX: piece.x - world.x,
-      offsetY: piece.y - world.y,
+      // Grab offset in screen pixels, so it survives the panel scale change.
+      offsetX: screen.x - event.clientX,
+      offsetY: screen.y - event.clientY,
       longPressTimer: null,
     };
     // Pointer capture is deliberately NOT taken here: capturing on press would
@@ -443,7 +576,7 @@ export function createRenderer(svg, options = {}) {
     }
   }
 
-  svg.addEventListener('pointerdown', (event) => {
+  function onPointerDown(event) {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
@@ -469,12 +602,14 @@ export function createRenderer(svg, options = {}) {
       startDrag(id, event);
       return;
     }
+    // Only the board background pans; the Bank panel is fixed.
+    if (event.currentTarget !== boardSvg) return;
     pan = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: { ...currentCamera() } };
-    svg.setPointerCapture?.(event.pointerId);
-    svg.style.cursor = 'grabbing';
-  });
+    boardSvg.setPointerCapture?.(event.pointerId);
+    boardSvg.style.cursor = 'grabbing';
+  }
 
-  svg.addEventListener('pointermove', (event) => {
+  function onPointerMove(event) {
     emitCursor(event);
     if (activePointers.has(event.pointerId)) {
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -484,7 +619,7 @@ export function createRenderer(svg, options = {}) {
       const [a, b] = [...activePointers.values()];
       const distance = Math.hypot(a.x - b.x, a.y - b.y);
       if (pinch.distance > 0 && distance > 0) {
-        const rect = svg.getBoundingClientRect();
+        const rect = boardSvg.getBoundingClientRect();
         const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
         const zoom = pinch.camera.zoom * (distance / pinch.distance);
         const anchor = { px: pinch.mid.x - rect.left, py: pinch.mid.y - rect.top };
@@ -500,11 +635,11 @@ export function createRenderer(svg, options = {}) {
         // Only now rebuild the pieces: a press that never moves must not
         // replace the node, or a native double-click (flip) can never fire.
         // Capture too, so the drag keeps tracking if the pointer leaves the board.
-        svg.setPointerCapture?.(event.pointerId);
+        event.currentTarget.setPointerCapture?.(event.pointerId);
         draggingId = drag.id;
         render(board);
       }
-      if (drag.moved) emitMove(drag.id, event, false);
+      if (drag.moved) emitMove(drag.id, event);
       return;
     }
 
@@ -513,17 +648,30 @@ export function createRenderer(svg, options = {}) {
       const dy = (event.clientY - pan.y) / pan.camera.zoom;
       emitCamera({ x: pan.camera.x - dx, y: pan.camera.y - dy, zoom: pan.camera.zoom });
     }
-  });
+  }
 
   function endPointer(event) {
+    // A `pointercancel` means the browser took the pointer over (e.g. a native
+    // drag). Its coordinates are (0,0), so it must never be treated as a
+    // release: that would fling the piece to the world origin. Cancel simply
+    // ends the gesture at the last emitted position.
+    const cancelled = event.type === 'pointercancel';
     activePointers.delete(event.pointerId);
     if (activePointers.size < 2) pinch = null;
     if (drag && event.pointerId === drag.pointerId) {
       if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
       const moved = drag.moved;
-      if (moved) {
-        emitMove(drag.id, event, true);
-      } else if (drag.pointerType === 'touch') {
+      if (moved && !cancelled) {
+        moveThrottle.cancel();
+        if (bankSvg && panelAt(event.clientX, event.clientY) === 'bank') {
+          // Dropped on the Bank panel: send it home to its slot.
+          emit({ type: 'send-home', id: drag.id });
+        } else {
+          // Dropped on the board: land where the pointer is.
+          const world = toWorld(event.clientX, event.clientY);
+          emit({ type: 'move', id: drag.id, x: world.x, y: world.y, final: true });
+        }
+      } else if (!moved && !cancelled && drag.pointerType === 'touch') {
         // A still tap: a second one shortly after sends the piece home.
         const now = Date.now();
         if (lastTouchTap && lastTouchTap.id === drag.id && now - lastTouchTap.time < DOUBLE_TAP_MS) {
@@ -542,43 +690,54 @@ export function createRenderer(svg, options = {}) {
     }
     if (pan && event.pointerId === pan.pointerId) {
       pan = null;
-      svg.style.cursor = '';
+      boardSvg.style.cursor = '';
     }
     // Paint the true final state: flush a trailing camera update (and any move
     // that was throttled without a final).
     moveThrottle.flush();
     cameraThrottle.flush();
   }
-  svg.addEventListener('pointerup', endPointer);
-  svg.addEventListener('pointercancel', endPointer);
 
-  // Right-click flips a piece between triangle (ship) and square (star).
-  svg.addEventListener('contextmenu', (event) => {
+  function onContextMenu(event) {
     const id = pieceFromEvent(event);
     if (!id) return;
     event.preventDefault();
     emit({ type: 'flip', id });
-  });
+  }
 
-  // Double-click sends a piece back home to its Bank slot.
-  svg.addEventListener('dblclick', (event) => {
+  function onDblclick(event) {
     const id = pieceFromEvent(event);
     if (!id) return;
     event.preventDefault();
     emit({ type: 'send-home', id });
-  });
+  }
 
-  svg.addEventListener(
-    'wheel',
-    (event) => {
-      event.preventDefault();
-      const cam = currentCamera();
-      const { px, py } = pointerPx(event);
-      const factor = Math.exp(-event.deltaY * 0.0015);
-      emitCamera(zoomAround(cam, view, px, py, cam.zoom * factor));
-    },
-    { passive: false },
-  );
+  function onWheel(event) {
+    event.preventDefault();
+    const cam = currentCamera();
+    const { px, py } = pointerPx(event);
+    const factor = Math.exp(-event.deltaY * 0.0015);
+    emitCamera(zoomAround(cam, view, px, py, cam.zoom * factor));
+  }
+
+  function attach(target) {
+    target.addEventListener('pointerdown', onPointerDown);
+    target.addEventListener('pointermove', onPointerMove);
+    target.addEventListener('pointerup', endPointer);
+    target.addEventListener('pointercancel', endPointer);
+    target.addEventListener('contextmenu', onContextMenu);
+    target.addEventListener('dblclick', onDblclick);
+    // A press-and-drag on a piece can make the browser start a native HTML5
+    // drag (and a text selection). That fires `pointercancel`, which would
+    // abort the drag and, worse, its (0,0) coordinates used to fling the piece
+    // to the world origin. Suppress both defaults.
+    target.addEventListener('dragstart', (event) => event.preventDefault());
+    target.addEventListener('selectstart', (event) => event.preventDefault());
+  }
+
+  attach(boardSvg);
+  if (bankSvg) attach(bankSvg);
+  boardSvg.addEventListener('wheel', onWheel, { passive: false });
 
   // +/− buttons and keyboard.
   function zoomBy(factor) {
@@ -586,22 +745,23 @@ export function createRenderer(svg, options = {}) {
     emitCamera({ x: cam.x, y: cam.y, zoom: cam.zoom * factor });
   }
 
-  // Fit the whole world (including the right-edge Bank) into the viewport,
-  // centred on the world centre, with a clamped zoom. A little margin
-  // (`FIT_MARGIN`) keeps the table edge off the screen border on first paint.
-  // Used when there is no saved document; sent immediately (not throttled) so
-  // the board is correct from the first frame.
+  // Fit the whole play field into the viewport, centred on the field centre,
+  // with a clamped zoom. A little margin (`FIT_MARGIN`) keeps the table edge off
+  // the screen border on first paint. The Bank panel is fixed and not part of
+  // the fit. Used when there is no saved document; sent immediately (not
+  // throttled) so the board is correct from the first frame.
   const FIT_MARGIN = 0.9;
   function fitToWorld() {
-    const rect = svg.getBoundingClientRect();
+    const rect = boardSvg.getBoundingClientRect();
     if (!(rect.width > 0 && rect.height > 0)) {
       // Not laid out yet: fit on the next measurement instead (see `measure`).
       pendingFit = true;
       return null;
     }
     view = { w: rect.width, h: rect.height };
-    const zoom = clampZoom(Math.min(view.w / WORLD.width, view.h / WORLD.height) * FIT_MARGIN);
-    const camera = clampCurrent({ x: WORLD.width / 2, y: WORLD.height / 2, zoom });
+    const world = { width: playfieldWidth(), height: WORLD.height };
+    const zoom = clampZoom(Math.min(view.w / world.width, view.h / world.height) * FIT_MARGIN);
+    const camera = clampCurrent({ x: world.width / 2, y: world.height / 2, zoom });
     sendCamera(camera);
     return camera;
   }
@@ -609,11 +769,12 @@ export function createRenderer(svg, options = {}) {
   let observer = null;
   if (typeof ResizeObserver !== 'undefined') {
     observer = new ResizeObserver(measure);
-    observer.observe(svg);
+    observer.observe(boardSvg);
+    if (bankSvg) observer.observe(bankSvg);
   }
 
   return {
-    svg,
+    svg: boardSvg,
     render,
     measure,
     fitToWorld,

@@ -40,21 +40,42 @@ export const WORLD = Object.freeze({ width: 3600, height: 1500 });
 
 // The world used to be narrower. Boards saved back then keep their Bank pieces
 // at the old coordinates (the Bank is anchored to the right edge), so
-// `migrateWorldWidth` re-homes them for the current world.
+// `migrateBoard` re-homes them for the current world.
 export const LEGACY_WORLD_WIDTH = 2400;
 
 // The Bank is a fixed 4 colour rows x 3 size columns grid at the far-right
-// edge of the world. Each cell holds `copies` identical pieces. Slots are
-// static: a piece dragged out leaves its slot empty and nothing reflows.
-// The cell is sized for the largest piece (see render/svg.js PIECE_SIZES).
+// edge of the world. Each cell holds `copies` identical pieces, fanned out by a
+// small `[dx, dy]` offset so the stack reads as several pieces without the cell
+// having to fit them side by side. Slots are static: a piece dragged out leaves
+// its slot empty and nothing reflows. The cell is sized for the largest piece
+// (see render/svg.js PIECE_SIZES).
 export const BANK = Object.freeze({
+  cellWidth: 150,
+  cellHeight: 140,
+  padding: 20,
+  copies: 3,
+  // Offsets of the three copies within a Bank cell, shared with the renderer
+  // so the slots and the pieces line up. Deliberately small: the copies overlap.
+  copyOffsets: Object.freeze([
+    Object.freeze([-18, 12]),
+    Object.freeze([0, 0]),
+    Object.freeze([18, -12]),
+  ]),
+});
+
+// The Bank as it was before it was compacted and given its own panel: 300x150
+// cells with the three copies laid out horizontally. Boards saved against it
+// are re-homed by `migrateBoard`.
+export const LEGACY_BANK = Object.freeze({
   cellWidth: 300,
   cellHeight: 150,
   padding: 20,
   copies: 3,
-  // Horizontal offsets of the three copies within a Bank cell. Shared with the
-  // renderer via `BANK.copyOffsets` so the slots and the pieces line up.
-  copyOffsets: Object.freeze([-100, 0, 100]),
+  copyOffsets: Object.freeze([
+    Object.freeze([-100, 0]),
+    Object.freeze([0, 0]),
+    Object.freeze([100, 0]),
+  ]),
 });
 
 export const MIN_ZOOM = 0.25;
@@ -89,13 +110,14 @@ export function clampZoom(zoom) {
 
 // Geometry of the Bank grid. Pure and deterministic; the renderer and the
 // tests both derive the same layout from it. `worldWidth` defaults to the
-// current world but can be overridden (e.g. to read an older board's layout).
-export function bankLayout(worldWidth = WORLD.width) {
+// current world and `bank` to the current Bank spec, but both can be
+// overridden — e.g. to read an older board's layout during migration.
+export function bankLayout(worldWidth = WORLD.width, bank = BANK) {
   const rows = COLORS.length;
   const cols = SIZES.length;
-  const width = cols * BANK.cellWidth;
-  const height = rows * BANK.cellHeight;
-  const x = worldWidth - BANK.padding - width;
+  const width = cols * bank.cellWidth;
+  const height = rows * bank.cellHeight;
+  const x = worldWidth - bank.padding - width;
   const y = (WORLD.height - height) / 2;
   return {
     rows,
@@ -108,12 +130,29 @@ export function bankLayout(worldWidth = WORLD.width) {
       const r = COLORS.indexOf(color);
       const c = SIZES.indexOf(size);
       return {
-        centerX: x + c * BANK.cellWidth + BANK.cellWidth / 2,
-        centerY: y + r * BANK.cellHeight + BANK.cellHeight / 2,
+        centerX: x + c * bank.cellWidth + bank.cellWidth / 2,
+        centerY: y + r * bank.cellHeight + bank.cellHeight / 2,
         index: { row: r, col: c },
       };
     },
   };
+}
+
+// The rectangle the Bank occupies at the right edge of the world. The Bank has
+// its own fixed panel in the UI (see render/svg.js); this is the world region
+// that panel looks at, and the region Bank pieces sit in.
+export function bankStrip(worldWidth = WORLD.width, bank = BANK) {
+  const layout = bankLayout(worldWidth, bank);
+  return { x: layout.x, y: layout.y, width: layout.width, height: layout.height };
+}
+
+// A gap between the table edge and the Bank strip, so the two never touch.
+export const BANK_GAP = 60;
+
+// Width of the table: the world minus the Bank strip and that gap. The board
+// camera is clamped to this, so the Bank never appears on the board itself.
+export function playfieldWidth(worldWidth = WORLD.width) {
+  return bankStrip(worldWidth).x - BANK_GAP;
 }
 
 const KNOWN_IDS = (() => {
@@ -136,23 +175,29 @@ export function isKnownId(id) {
 // from the Bank layout, so "send home" never needs to store the origin: the
 // slot is a pure function of the piece id. Cached per world width so the
 // migration below can also ask for an older world's slots.
-const HOME_CACHE = new Map();
-function homePositions(worldWidth) {
-  let homes = HOME_CACHE.get(worldWidth);
-  if (homes) return homes;
-  const layout = bankLayout(worldWidth);
-  homes = {};
+function homesFor(worldWidth, bank) {
+  const layout = bankLayout(worldWidth, bank);
+  const homes = {};
   for (const color of COLORS) {
     for (const size of SIZES) {
       const cell = layout.cellFor(color, size);
-      for (let copy = 1; copy <= BANK.copies; copy++) {
+      for (let copy = 1; copy <= bank.copies; copy++) {
+        const [dx, dy] = bank.copyOffsets[copy - 1];
         homes[pieceId(color, size, copy)] = {
-          x: cell.centerX + BANK.copyOffsets[copy - 1],
-          y: cell.centerY,
+          x: cell.centerX + dx,
+          y: cell.centerY + dy,
         };
       }
     }
   }
+  return homes;
+}
+
+const HOME_CACHE = new Map();
+function homePositions(worldWidth) {
+  let homes = HOME_CACHE.get(worldWidth);
+  if (homes) return homes;
+  homes = homesFor(worldWidth, BANK);
   HOME_CACHE.set(worldWidth, homes);
   return homes;
 }
@@ -161,22 +206,30 @@ export function homePosition(id, worldWidth = WORLD.width) {
   return homePositions(worldWidth)[id] || null;
 }
 
-// Re-home Bank pieces saved against an older, narrower world. A piece sitting
-// exactly on its old Bank slot moves to the new one; every other piece (i.e.
-// anything out on the play field) is left alone. Idempotent: after one pass no
-// piece is on a legacy slot any more, so running it again changes nothing.
-export function migrateWorldWidth(doc, fromWidth = LEGACY_WORLD_WIDTH) {
-  const from = Number(fromWidth);
-  if (!doc || !doc.pieces || !Number.isFinite(from) || from === WORLD.width) return doc;
-  const oldHomes = homePositions(from);
+// Re-home Bank pieces saved against an older layout. A piece sitting exactly on
+// a legacy Bank slot moves to its current slot; every other piece (i.e. anything
+// out on the play field) is left alone. Two legacy layouts are known: the
+// original Bank in the narrow world, and that same Bank in the current world.
+// Idempotent: after one pass no piece is on a legacy slot any more.
+const LEGACY_BANK_LAYOUTS = [
+  { worldWidth: LEGACY_WORLD_WIDTH, bank: LEGACY_BANK },
+  { worldWidth: WORLD.width, bank: LEGACY_BANK },
+];
+
+export function migrateBoard(doc) {
+  if (!doc || !doc.pieces) return doc;
   const newHomes = homePositions(WORLD.width);
+  const legacyHomes = LEGACY_BANK_LAYOUTS.map(({ worldWidth, bank }) => homesFor(worldWidth, bank));
   let changed = false;
   const pieces = { ...doc.pieces };
   for (const [id, piece] of Object.entries(pieces)) {
-    const oldHome = oldHomes[id];
     const newHome = newHomes[id];
-    if (!oldHome || !newHome) continue;
-    if (piece.x === oldHome.x && piece.y === oldHome.y) {
+    if (!newHome) continue;
+    const onLegacySlot = legacyHomes.some((homes) => {
+      const oldHome = homes[id];
+      return oldHome && piece.x === oldHome.x && piece.y === oldHome.y;
+    });
+    if (onLegacySlot && (piece.x !== newHome.x || piece.y !== newHome.y)) {
       pieces[id] = { ...piece, x: newHome.x, y: newHome.y };
       changed = true;
     }
@@ -212,7 +265,7 @@ export function createDocument(gameId = 'local', meta = {}) {
     resetBy: '',
     pieces,
     camera: {
-      x: WORLD.width / 2,
+      x: playfieldWidth() / 2,
       y: WORLD.height / 2,
       zoom: 1,
       version: 0,

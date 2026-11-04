@@ -35,9 +35,9 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 
 **The board and the Bank**
 13. As a player, I want to see all 36 pieces as triangles at the start, so that the table looks like a Homeworlds supply.
-14. As a player, I want the pieces grouped in the Bank on the right edge of the world, so that the shared supply is in the familiar place.
+14. As a player, I want the pieces grouped in the Bank in its own fixed panel on the right, so that the shared supply never covers the play field.
 15. As a player, I want the Bank ordered with colours in rows and sizes in columns (4 colour rows × 3 size columns, 3 copies per cell), so that I can find any piece by colour and size at a glance.
-16. As a player, I want the three copies of a piece laid out together within their cell, so that I can grab one without hunting.
+16. As a player, I want the three copies of a piece to overlap within their cell, so that a Bank cell stays small and I can still grab a piece without hunting.
 17. As a player, I want dragging a piece out of the Bank to leave an empty slot, so that the layout stays stable and I can see what has been taken.
 18. As a player, I want the Bank to never reflow on its own, so that both players always see the same arrangement.
 19. As a player, I want the play field to the left of the Bank to be unbounded in layout but bounded in extent, so that pieces have room but cannot be lost.
@@ -136,8 +136,8 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 
 ### Layout (deterministic)
 - One logical world of **3600 × 1500** world units — wider than a typical viewport to leave room for large formations. Its **boundary is drawn as a fixed rectangle in world coordinates**, so players can see exactly where the table ends; it pans and zooms with the camera, and the camera is clamped so it can never be lost off-screen.
-- Bank occupies a strip at the **far-right edge of the world** (world coordinates, so it pans/zooms with everything).
-- Bank grid: **4 colour rows × 3 size columns**, 3 identical copies laid out within each cell. Static slots — a vacated slot is not reflowed. The cell is sized for the largest piece.
+- Bank occupies its own fixed panel to the right of the board (2/3 board, 1/3 Bank). The board camera looks only at the play field, so the Bank never covers the game board; the Bank panel is pinned to the Bank strip and does not pan or zoom.
+- Bank grid: **4 colour rows × 3 size columns**, 3 identical copies overlapping within each cell. Static slots — a vacated slot is not reflowed. The cell is sized for the largest piece.
 - Piece size is drawn, not just counted: small/medium/large pieces increase in side length (see `PIECE_SIZES` in `render/svg.js`), so relative size reads at a glance.
 - All 36 pieces start as `kind: 'ship'`, ordered in the Bank.
 
@@ -168,7 +168,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 ### Interaction details (settled)
 - **Direction shows ownership.** A ship points away from its owner, towards the other player: on your screen your own ships point up and the opponent's point down; the same ship points the other way on your opponent's screen. Untouched/Bank ships point up for both.
 - **Flip:** right-click toggles triangle↔square, anchored at the piece's centre, preserving colour/size — on a touchscreen, long-press. A star is neutral (shared by both); a star flipped back is a ship of the player who flipped it.
-- **Send home:** double-click returns a piece to its original Bank slot as an upright, neutral ship — on a touchscreen, double-tap. No confirmation (it is undone by dragging the piece out again).
+- **Send home:** double-click returns a piece to its original Bank slot as an upright, neutral ship — or drag it onto the Bank panel; on a touchscreen, double-tap. No confirmation (it is undone by dragging the piece out again).
 - Free drag, overlap allowed, dragged piece brought to front. No snapping, no true stacking, no multi-select (see Out of Scope).
 - Camera: shared pan+zoom; wheel / pinch; anchored at cursor; 25%–100% (current level shown in the toolbar); independent of the per-player piece direction; no independent free-look. The view is **clamped inside the world** — the camera cannot pan the field off-screen, and when zoomed out past the world it stays centred on the axis that no longer fits.
 - Touch: drag = move, **double-tap = send home**, **long-press = flip**, pinch = zoom, background drag = pan.
@@ -178,6 +178,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 ### Presentation
 - German UI, reusing the existing `style.css` colour tokens and dark/light theme; `play.html` keeps its own JS/CSS so the reference pages are untouched.
 - Header is just "Homeworlds" — no subheading and no bottom-nav links.
+- The board and the Bank sit side by side: the table takes five sevenths, the Bank a fixed panel for the remaining two sevenths (stacked on narrow screens). The Bank never covers the play field.
 - Toolbar shows the connection status and the current zoom level, plus the "Steuerung", "Verbindung erneuern" and "Zurücksetzen" buttons.
 - The invite panel and the JSON exchange panel collapse (fold) so the board gets the space; "Board als JSON austauschen" sits below the board.
 - A "Steuerung" dialog lists every action (move, flip, send home, reset, zoom, pan, connect) so a new player learns the gestures.
@@ -187,7 +188,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 **What makes a good test:** test external behaviour of the pure modules — the visible consequences of inputs (documents in, documents out) — never their internals. A test should be able to change the SVG renderer, the WebRTC adapter, or `localStorage` wiring completely and still pass, because those are not where the logic lives.
 
 **Seams (the primary seam is deliberately the only nontrivial one):**
-- **`core/state`** — target of the bulk of the tests: deterministic initial document and Bank layout; move/clamp and ownership; flip preserving position/colour/size and ownership rules; `pieceFacing` (own/opponent/neutral, stars); send-home returning to slot as a neutral ship; `migrateWorldWidth` re-homing old Bank pieces; Reset; per-piece LWW (newer wins, older ignored); tiebreak; camera LWW; `mergeDocuments`; message validation (bad id, bad colour, NaN coords, unknown kind/owner). Run with `node --test`.
+- **`core/state`** — target of the bulk of the tests: deterministic initial document and Bank layout; move/clamp and ownership; flip preserving position/colour/size and ownership rules; `pieceFacing` (own/opponent/neutral, stars); send-home returning to slot as a neutral ship; `migrateBoard` re-homing old Bank pieces; Reset; per-piece LWW (newer wins, older ignored); tiebreak; camera LWW; `mergeDocuments`; message validation (bad id, bad colour, NaN coords, unknown kind/owner). Run with `node --test`.
 - **`signalling`** — pure codec round-trip: blob → URL/paste string → blob is identity; malformed input is rejected.
 - **`render/svg`** — the pure camera maths (`clampCamera`, `zoomAround`, screen/world conversion) is unit-tested; the DOM drawing is verified by manual use.
 - **Transport / storage** — thin shells over the reducer; verified by a small number of integration checks (BroadcastChannel end-to-end in one browser) and manual use, not unit tests.

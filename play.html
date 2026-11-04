@@ -44,7 +44,7 @@
     <dl class="controls-list">
       <div><dt>Bewegen</dt><dd>Stein mit der Maus oder dem Finger ziehen.</dd></div>
       <div><dt>Umbauen</dt><dd>Rechtsklick wechselt zwischen Schiff und Station – auf dem Touchscreen: lange drücken.</dd></div>
-      <div><dt>Zurück in die Bank</dt><dd>Doppelklick schickt den Stein zurück auf seinen Platz in der Bank – auf dem Touchscreen: Doppeltipp.</dd></div>
+      <div><dt>Zurück in die Bank</dt><dd>Doppelklick schickt den Stein zurück auf seinen Platz in der Bank – oder zieh ihn einfach in das Bank-Feld rechts. Auf dem Touchscreen: Doppeltipp.</dd></div>
       <div><dt>Richtung</dt><dd>Schiffe zeigen immer zum Gegner: deine nach oben, die des Gegners zu dir. Steine in der Bank gehören noch niemandem.</dd></div>
       <div><dt>Zurücksetzen</dt><dd>Knopf „Zurücksetzen“: alle 36 Steine gehen zurück in die Bank.</dd></div>
     </dl>
@@ -106,8 +106,14 @@
     <p class="handshake-error" id="handshake-error" hidden></p>
   </details>
 
-  <div class="board-frame">
-    <svg id="board" class="board" role="img" aria-label="Homeworlds-Spielbrett"></svg>
+  <div class="table-layout">
+    <div class="board-frame">
+      <svg id="board" class="board" role="img" aria-label="Homeworlds-Spielbrett"></svg>
+    </div>
+    <aside class="bank-frame">
+      <h2 class="panel-title">Bank</h2>
+      <svg id="bank" class="bank" role="img" aria-label="Bank der Homeworlds-Steine"></svg>
+    </aside>
   </div>
 
   <!-- ticket 13: JSON export/import fallback (no peer connection required) -->
