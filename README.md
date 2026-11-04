@@ -1,22 +1,20 @@
-# Homeworlds Shared Board
+# Homeworlds
 
-Eine kleine Web-App ohne Abhängigkeiten für das Pyramiden-Spiel **Homeworlds**:
+Eine kleine Web-App ohne Abhängigkeiten für das Spiel **Homeworlds**:
 eine Kurzreferenz-Seite sowie ein interaktives Spielbrett, das zwei Spieler im
-Browser gemeinsam nutzen können.
+Browser gemeinsam spielen können.
 
 - `index.html` – Kurzreferenz zu den Regeln (Deutsch)
 - `guide.html` – Strategie-Guide
 - `play.html` – das interaktive, gemeinsame Spielbrett (lokal, oder
-  Peer-to-Peer zwischen zwei Browsern per WebRTC, mit Einladungs-Links und
-  Export/Import als Ausweichmöglichkeit)
+  Peer-to-Peer zwischen zwei Browsern per WebRTC)
 
-Alles ist statisch: reines HTML, CSS und ES-Module, ohne Build-Schritt und ohne
+Alles ist statisch und 100% lokal: reines HTML, CSS und JavaScript, ohne Build-Schritt und ohne
 Laufzeit-Abhängigkeiten.
 
 ## Starten
 
-Den Ordner über HTTP ausliefern (ES-Module und WebRTC brauchen einen echten
-Origin, `file://` funktioniert also nicht):
+Den Ordner über HTTP ausliefern:
 
 ```sh
 python3 -m http.server 8000
