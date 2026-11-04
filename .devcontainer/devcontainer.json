@@ -2,8 +2,10 @@
   "name": "homeworlds",
   "image": "mcr.microsoft.com/devcontainers/base",
   "features": {
+    "ghcr.io/devcontainers/features/python:1": {},
+    "ghcr.io/devcontainers/features/node:2": { "version": "26" },
+    "ghcr.io/nolanjx/devcontainer-features/mattpocock-skills:1": {},
     "ghcr.io/devcontainer-community/devcontainer-features/opencode.ai:1": {},
-    "ghcr.io/devcontainers/features/node:1": {},
   },
   "customizations": {
     "vscode": {
@@ -20,11 +22,6 @@
     {
       "source": "${localEnv:HOME}/.config/opencode",
 	  "target": "/home/vscode/.config/opencode",
-      "type": "bind"
-    },
-    {
-      "source": "${localEnv:HOME}/.agents/skills",
-	  "target": "/home/vscode/.agents/skills",
       "type": "bind"
     },
     {
