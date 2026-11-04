@@ -55,6 +55,26 @@ export function worldToScreen(camera, view, wx, wy) {
   };
 }
 
+// Clamp a camera so the visible world region stays inside the world. The
+// viewport is `view.w / zoom` by `view.h / zoom` world units; on an axis where
+// it is larger than the world, the camera is centred on that axis instead. This
+// is what stops a player panning until the field is lost off-screen.
+export function clampCamera(camera, view, world) {
+  const zoom = clampZoom(camera.zoom);
+  const x = Number.isFinite(camera.x) ? camera.x : world.width / 2;
+  const y = Number.isFinite(camera.y) ? camera.y : world.height / 2;
+  return {
+    x: clampAxis(x, view.w / (2 * zoom), world.width),
+    y: clampAxis(y, view.h / (2 * zoom), world.height),
+    zoom,
+  };
+}
+
+function clampAxis(center, half, extent) {
+  if (half * 2 >= extent) return extent / 2;
+  return clamp(center, half, extent - half);
+}
+
 // New camera that keeps the given screen anchor under the same world point
 // while changing zoom to `nextZoom`.
 export function zoomAround(camera, view, px, py, nextZoom) {
@@ -77,8 +97,14 @@ export function createRenderer(svg, options = {}) {
   const remotePresence = { cursor: null, draggingId: null, name: '' };
   let view = { w: svg.clientWidth || 960, h: svg.clientHeight || 640 };
 
+  // The table edge: a fixed rectangle in world coordinates, so it pans and
+  // zooms with the camera and marks exactly where the field ends.
   const boundary = el('rect', {
     class: 'board-boundary',
+    x: 0,
+    y: 0,
+    width: WORLD.width,
+    height: WORLD.height,
   });
   const slots = el('g', { class: 'bank-slots' });
   const pieces = el('g', { class: 'board-pieces' });
@@ -121,20 +147,23 @@ export function createRenderer(svg, options = {}) {
     const x = cam.x - w / 2;
     const y = cam.y - h / 2;
     svg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
-    // The boundary frames the visible board: it tracks the viewBox (the world
-    // region currently on screen) so its edges always sit on the SVG edges,
-    // panning and zooming with the camera. Piece positions are still clamped to
-    // the fixed world extent in core/state.js, which is independent of this.
-    boundary.setAttribute('x', x);
-    boundary.setAttribute('y', y);
-    boundary.setAttribute('width', w);
-    boundary.setAttribute('height', h);
+    // `boundary` is pinned in world coordinates (see above), so it needs no
+    // update here: it moves with the viewBox and marks the real table edge.
   }
+
+  // Set once a fit is requested before the board has a size; the first valid
+  // measurement then performs it, so the initial zoom is never computed from
+  // the pre-layout fallback viewport.
+  let pendingFit = false;
 
   function measure() {
     const rect = svg.getBoundingClientRect();
     if (rect.width > 0 && rect.height > 0) {
       view = { w: rect.width, h: rect.height };
+    }
+    if (pendingFit) {
+      pendingFit = false;
+      fitToWorld();
     }
     updateViewBox();
   }
@@ -153,12 +182,20 @@ export function createRenderer(svg, options = {}) {
     return board ? board.camera : { x: WORLD.width / 2, y: WORLD.height / 2, zoom: 1 };
   }
 
+  // Every camera that leaves the renderer is first clamped to the world, so a
+  // player can never pan the field off-screen and the synced value is always
+  // valid. `view` is read at call time, so it tracks resizes.
+  function clampCurrent(camera) {
+    return clampCamera(camera, view, WORLD);
+  }
+
   function emitCamera(camera) {
-    cameraThrottle.push(camera);
+    cameraThrottle.push(clampCurrent(camera));
   }
 
   function sendCamera(camera) {
-    emit({ type: 'camera', camera: { x: camera.x, y: camera.y, zoom: clampZoom(camera.zoom) } });
+    const clamped = clampCurrent(camera);
+    emit({ type: 'camera', camera: { x: clamped.x, y: clamped.y, zoom: clamped.zoom } });
   }
 
   // Trailing throttle: at most one update per interval, keeping only the latest
@@ -550,12 +587,21 @@ export function createRenderer(svg, options = {}) {
   }
 
   // Fit the whole world (including the right-edge Bank) into the viewport,
-  // centred on the world centre, with a clamped zoom. Used on first paint when
-  // there is no saved document. Sent immediately (not throttled) so the board
-  // is correct from the first frame.
+  // centred on the world centre, with a clamped zoom. A little margin
+  // (`FIT_MARGIN`) keeps the table edge off the screen border on first paint.
+  // Used when there is no saved document; sent immediately (not throttled) so
+  // the board is correct from the first frame.
+  const FIT_MARGIN = 0.9;
   function fitToWorld() {
-    const zoom = clampZoom(Math.min(view.w / WORLD.width, view.h / WORLD.height));
-    const camera = { x: WORLD.width / 2, y: WORLD.height / 2, zoom };
+    const rect = svg.getBoundingClientRect();
+    if (!(rect.width > 0 && rect.height > 0)) {
+      // Not laid out yet: fit on the next measurement instead (see `measure`).
+      pendingFit = true;
+      return null;
+    }
+    view = { w: rect.width, h: rect.height };
+    const zoom = clampZoom(Math.min(view.w / WORLD.width, view.h / WORLD.height) * FIT_MARGIN);
+    const camera = clampCurrent({ x: WORLD.width / 2, y: WORLD.height / 2, zoom });
     sendCamera(camera);
     return camera;
   }
@@ -575,6 +621,8 @@ export function createRenderer(svg, options = {}) {
     setPresence,
     getCamera: currentCamera,
     getView: () => view,
+    // Clamp a camera (e.g. one arriving from the peer) to the local viewport.
+    clampCamera: clampCurrent,
     toWorld,
     destroy() {
       observer?.disconnect();

@@ -6,6 +6,7 @@ import {
   SIZES,
   WORLD,
   BANK,
+  LEGACY_WORLD_WIDTH,
   MIN_ZOOM,
   MAX_ZOOM,
   createDocument,
@@ -20,6 +21,7 @@ import {
   clampZoom,
   homePosition,
   mergeDocuments,
+  migrateWorldWidth,
   normalisePiece,
   pieceFacing,
   resetDocument,
@@ -461,4 +463,58 @@ test('mergeDocuments ignores a corrupt remote-only piece', () => {
   };
   const merged = mergeDocuments(local, remote);
   assert.equal(merged.pieces['purple-huge-9'], undefined);
+});
+
+// --- migrateWorldWidth (older, narrower world) --------------------------
+
+// A board saved when the world was 2400 wide: Bank pieces sat on the legacy
+// slots. `migrateWorldWidth` moves them to the current slots and leaves
+// anything out on the play field alone.
+function legacyBoard() {
+  const legacyLayout = bankLayout(LEGACY_WORLD_WIDTH);
+  const pieces = {};
+  for (const color of COLORS) {
+    for (const size of SIZES) {
+      const cell = legacyLayout.cellFor(color, size);
+      for (let copy = 1; copy <= BANK.copies; copy++) {
+        const id = pieceId(color, size, copy);
+        pieces[id] = {
+          id, color, size, kind: 'ship',
+          x: cell.centerX + BANK.copyOffsets[copy - 1],
+          y: cell.centerY,
+          owner: null, version: 0, by: '',
+        };
+      }
+    }
+  }
+  return { gameId: 'g1', resetVersion: 0, resetBy: '', pieces, camera: { x: 1200, y: 750, zoom: 1, version: 0, by: '' } };
+}
+
+test('migrateWorldWidth re-homes Bank pieces from the old world', () => {
+  const legacy = legacyBoard();
+  const id = pieceId('red', 3, 1);
+  assert.notEqual(legacy.pieces[id].x, homePosition(id).x, 'the legacy slot really differs');
+  const moved = migrateWorldWidth(legacy, LEGACY_WORLD_WIDTH);
+  for (const pieceId_ of Object.keys(legacy.pieces)) {
+    assert.equal(moved.pieces[pieceId_].x, homePosition(pieceId_).x, `${pieceId_} re-homed`);
+    assert.equal(moved.pieces[pieceId_].y, homePosition(pieceId_).y);
+  }
+});
+
+test('migrateWorldWidth leaves play-field pieces untouched', () => {
+  const legacy = legacyBoard();
+  const id = pieceId('blue', 2, 2);
+  legacy.pieces[id] = { ...legacy.pieces[id], x: 400, y: 500 };
+  const moved = migrateWorldWidth(legacy, LEGACY_WORLD_WIDTH);
+  assert.equal(moved.pieces[id].x, 400);
+  assert.equal(moved.pieces[id].y, 500);
+});
+
+test('migrateWorldWidth is idempotent and a no-op for the current width', () => {
+  const legacy = legacyBoard();
+  const once = migrateWorldWidth(legacy, LEGACY_WORLD_WIDTH);
+  const twice = migrateWorldWidth(once, LEGACY_WORLD_WIDTH);
+  assert.deepEqual(twice.pieces, once.pieces, 'a second pass changes nothing');
+  const same = createDocument('g1');
+  assert.equal(migrateWorldWidth(same), same, 'current-width boards are returned unchanged');
 });

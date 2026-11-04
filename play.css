@@ -275,11 +275,15 @@
     var(--bg);
 }
 
+/* The table edge: a fixed rectangle in world coordinates. The fill tints the
+   whole playfield so the area beyond it reads as "off the table", and the
+   non-scaling stroke keeps the dashed border a readable width at any zoom. */
 .board-boundary {
   fill: rgba(52, 152, 219, 0.04);
   stroke: var(--border);
   stroke-width: 3;
   stroke-dasharray: 14 10;
+  vector-effect: non-scaling-stroke;
 }
 
 .bank-slot {

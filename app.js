@@ -15,6 +15,7 @@ import {
   buildSendHomeMessage,
   messageId,
   mergeDocuments,
+  migrateWorldWidth,
 } from './core/state.js';
 import { createRenderer } from './render/svg.js';
 import { buildCursorMessage, buildDragMessage, readPresence } from './presence/messages.js';
@@ -94,7 +95,9 @@ function writeRole(id, role) {
 let localRole = readRole(gameId);
 
 const saved = store.loadDocument(gameId);
-const restored = saved && saved.pieces && saved.camera ? saved : null;
+// A board saved before the world was widened keeps its Bank pieces at the old
+// coordinates; re-home them so they line up with the current Bank.
+const restored = saved && saved.pieces && saved.camera ? migrateWorldWidth(saved) : null;
 let doc = restored || createDocument(gameId);
 
 const renderer = createRenderer(svg, { onOperation: handleOperation, getLocalRole: () => localRole });
@@ -245,6 +248,11 @@ function receiveRemote(message) {
   if (message.type === 'cursor' || message.type === 'drag') {
     applyPresence(message);
     return;
+  }
+  // Clamp an incoming camera to our own viewport, so a peer on a different
+  // screen size can never leave the field off our screen.
+  if (message.type === 'camera' && message.camera) {
+    message = { ...message, camera: { ...message.camera, ...renderer.clampCamera(message.camera) } };
   }
   const next = applyMessage(doc, message);
   if (next !== doc) setDocument(next);
@@ -552,7 +560,8 @@ function importBoard() {
     store.rememberGameId(gameId);
     useBroadcast(gameId);
   }
-  setDocument(restored);
+  // An imported board from before the world was widened needs re-homing too.
+  setDocument(migrateWorldWidth(restored));
 }
 
 // --- Local operations ---------------------------------------------------

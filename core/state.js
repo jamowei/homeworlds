@@ -36,7 +36,12 @@ export const ROLES = ['host', 'guest'];
 export const SIZE_NAMES = { 1: 'small', 2: 'medium', 3: 'large' };
 
 // One logical world, larger than a typical viewport, with a visible boundary.
-export const WORLD = Object.freeze({ width: 2400, height: 1500 });
+export const WORLD = Object.freeze({ width: 3600, height: 1500 });
+
+// The world used to be narrower. Boards saved back then keep their Bank pieces
+// at the old coordinates (the Bank is anchored to the right edge), so
+// `migrateWorldWidth` re-homes them for the current world.
+export const LEGACY_WORLD_WIDTH = 2400;
 
 // The Bank is a fixed 4 colour rows x 3 size columns grid at the far-right
 // edge of the world. Each cell holds `copies` identical pieces. Slots are
@@ -83,13 +88,14 @@ export function clampZoom(zoom) {
 }
 
 // Geometry of the Bank grid. Pure and deterministic; the renderer and the
-// tests both derive the same layout from it.
-export function bankLayout() {
+// tests both derive the same layout from it. `worldWidth` defaults to the
+// current world but can be overridden (e.g. to read an older board's layout).
+export function bankLayout(worldWidth = WORLD.width) {
   const rows = COLORS.length;
   const cols = SIZES.length;
   const width = cols * BANK.cellWidth;
   const height = rows * BANK.cellHeight;
-  const x = WORLD.width - BANK.padding - width;
+  const x = worldWidth - BANK.padding - width;
   const y = (WORLD.height - height) / 2;
   return {
     rows,
@@ -128,10 +134,14 @@ export function isKnownId(id) {
 
 // The deterministic Bank slot every piece starts in and returns to. Derived
 // from the Bank layout, so "send home" never needs to store the origin: the
-// slot is a pure function of the piece id.
-const HOME_POSITIONS = (() => {
-  const layout = bankLayout();
-  const homes = {};
+// slot is a pure function of the piece id. Cached per world width so the
+// migration below can also ask for an older world's slots.
+const HOME_CACHE = new Map();
+function homePositions(worldWidth) {
+  let homes = HOME_CACHE.get(worldWidth);
+  if (homes) return homes;
+  const layout = bankLayout(worldWidth);
+  homes = {};
   for (const color of COLORS) {
     for (const size of SIZES) {
       const cell = layout.cellFor(color, size);
@@ -143,11 +153,35 @@ const HOME_POSITIONS = (() => {
       }
     }
   }
+  HOME_CACHE.set(worldWidth, homes);
   return homes;
-})();
+}
 
-export function homePosition(id) {
-  return HOME_POSITIONS[id] || null;
+export function homePosition(id, worldWidth = WORLD.width) {
+  return homePositions(worldWidth)[id] || null;
+}
+
+// Re-home Bank pieces saved against an older, narrower world. A piece sitting
+// exactly on its old Bank slot moves to the new one; every other piece (i.e.
+// anything out on the play field) is left alone. Idempotent: after one pass no
+// piece is on a legacy slot any more, so running it again changes nothing.
+export function migrateWorldWidth(doc, fromWidth = LEGACY_WORLD_WIDTH) {
+  const from = Number(fromWidth);
+  if (!doc || !doc.pieces || !Number.isFinite(from) || from === WORLD.width) return doc;
+  const oldHomes = homePositions(from);
+  const newHomes = homePositions(WORLD.width);
+  let changed = false;
+  const pieces = { ...doc.pieces };
+  for (const [id, piece] of Object.entries(pieces)) {
+    const oldHome = oldHomes[id];
+    const newHome = newHomes[id];
+    if (!oldHome || !newHome) continue;
+    if (piece.x === oldHome.x && piece.y === oldHome.y) {
+      pieces[id] = { ...piece, x: newHome.x, y: newHome.y };
+      changed = true;
+    }
+  }
+  return changed ? { ...doc, pieces } : doc;
 }
 
 export function createDocument(gameId = 'local', meta = {}) {
@@ -156,7 +190,7 @@ export function createDocument(gameId = 'local', meta = {}) {
     SIZES.forEach((size) => {
       for (let copy = 1; copy <= BANK.copies; copy++) {
         const id = pieceId(color, size, copy);
-        const home = HOME_POSITIONS[id];
+        const home = homePosition(id);
         pieces[id] = {
           id,
           color,

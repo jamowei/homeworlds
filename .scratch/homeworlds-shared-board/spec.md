@@ -78,7 +78,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 44. As a player, I want to zoom with the mouse wheel, so that zooming is natural.
 45. As a player, I want to zoom with +/− buttons, so that I have precise control.
 46. As a player, I want to pinch-zoom on a touchscreen, so that I can zoom without a mouse.
-47. As a player, I want to pan the camera by dragging the empty background, so that I can move around a zoomed-in board.
+47. As a player, I want to pan the camera by dragging the empty background, but never past the edge of the field, so that I can move around a zoomed-in board without ever losing it off-screen.
 48. As a player, I want the camera anchored under my cursor when zooming, so that the point I am looking at stays put.
 49. As a player, I want my camera pan and zoom synchronised with my opponent, so that we always look at the same part of the table.
 
@@ -135,7 +135,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - **Roles.** Each player is `host` (created the game, or playing alone) or `guest` (joined via an invite). The role is not part of the synced document: it is remembered locally (per tab, falling back to `localStorage`) and only the derived direction leaves the client. Both peers must hold opposite roles; create sets `host`, join sets `guest`.
 
 ### Layout (deterministic)
-- One logical world with a fixed size larger than a typical viewport and a visible boundary.
+- One logical world of **3600 × 1500** world units — wider than a typical viewport to leave room for large formations. Its **boundary is drawn as a fixed rectangle in world coordinates**, so players can see exactly where the table ends; it pans and zooms with the camera, and the camera is clamped so it can never be lost off-screen.
 - Bank occupies a strip at the **far-right edge of the world** (world coordinates, so it pans/zooms with everything).
 - Bank grid: **4 colour rows × 3 size columns**, 3 identical copies laid out within each cell. Static slots — a vacated slot is not reflowed. The cell is sized for the largest piece.
 - Piece size is drawn, not just counted: small/medium/large pieces increase in side length (see `PIECE_SIZES` in `render/svg.js`), so relative size reads at a glance.
@@ -170,7 +170,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - **Flip:** right-click toggles triangle↔square, anchored at the piece's centre, preserving colour/size — on a touchscreen, long-press. A star is neutral (shared by both); a star flipped back is a ship of the player who flipped it.
 - **Send home:** double-click returns a piece to its original Bank slot as an upright, neutral ship — on a touchscreen, double-tap. No confirmation (it is undone by dragging the piece out again).
 - Free drag, overlap allowed, dragged piece brought to front. No snapping, no true stacking, no multi-select (see Out of Scope).
-- Camera: shared pan+zoom; wheel / pinch; anchored at cursor; 25%–100% (current level shown in the toolbar); independent of the per-player piece direction; no independent free-look.
+- Camera: shared pan+zoom; wheel / pinch; anchored at cursor; 25%–100% (current level shown in the toolbar); independent of the per-player piece direction; no independent free-look. The view is **clamped inside the world** — the camera cannot pan the field off-screen, and when zoomed out past the world it stays centred on the axis that no longer fits.
 - Touch: drag = move, **double-tap = send home**, **long-press = flip**, pinch = zoom, background drag = pan.
 - Presence: opponent cursor, opponent drag highlight, connection status, all labelled with the opponent's name.
 - **Name is mandatory** before creating or joining a game; default suggestion "Gast".
@@ -187,9 +187,10 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 **What makes a good test:** test external behaviour of the pure modules — the visible consequences of inputs (documents in, documents out) — never their internals. A test should be able to change the SVG renderer, the WebRTC adapter, or `localStorage` wiring completely and still pass, because those are not where the logic lives.
 
 **Seams (the primary seam is deliberately the only nontrivial one):**
-- **`core/state`** — target of the bulk of the tests: deterministic initial document and Bank layout; move/clamp and ownership; flip preserving position/colour/size and ownership rules; `pieceFacing` (own/opponent/neutral, stars); send-home returning to slot as a neutral ship; Reset; per-piece LWW (newer wins, older ignored); tiebreak; camera LWW; `mergeDocuments`; message validation (bad id, bad colour, NaN coords, unknown kind/owner). Run with `node --test`.
+- **`core/state`** — target of the bulk of the tests: deterministic initial document and Bank layout; move/clamp and ownership; flip preserving position/colour/size and ownership rules; `pieceFacing` (own/opponent/neutral, stars); send-home returning to slot as a neutral ship; `migrateWorldWidth` re-homing old Bank pieces; Reset; per-piece LWW (newer wins, older ignored); tiebreak; camera LWW; `mergeDocuments`; message validation (bad id, bad colour, NaN coords, unknown kind/owner). Run with `node --test`.
 - **`signalling`** — pure codec round-trip: blob → URL/paste string → blob is identity; malformed input is rejected.
-- **Transport / storage / renderer** — thin shells over the reducer; verified by a small number of integration checks (BroadcastChannel end-to-end in one browser) and manual use, not unit tests.
+- **`render/svg`** — the pure camera maths (`clampCamera`, `zoomAround`, screen/world conversion) is unit-tested; the DOM drawing is verified by manual use.
+- **Transport / storage** — thin shells over the reducer; verified by a small number of integration checks (BroadcastChannel end-to-end in one browser) and manual use, not unit tests.
 
 **Prior art:** the repo has no tests and no test tooling today. This spec introduces a minimal `node --test` setup with **zero runtime dependencies** (dev-only), keeping the pure core importable in Node.
 
