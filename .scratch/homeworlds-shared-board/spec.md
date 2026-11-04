@@ -13,9 +13,9 @@ The players need a lightweight shared "digital table" where both can see and man
 
 ## Solution
 
-A single static page, `play.html`, in this repository, served over HTTPS (GitHub Pages). It renders the 36 Homeworlds pyramids as an SVG board ("the Bank" on the right, play field to the left). Both players connect **directly, peer-to-peer, with no server** using WebRTC DataChannels whose handshake is exchanged by copy-pasting two shareable URLs. Every board change (drag, flip, send a piece home, Reset, camera pan/zoom) is applied locally and streamed to the other player in real time. A piece's **pointing direction shows who last moved it**: a ship always points away from its owner, towards the other player, so each player sees their own ships pointing up and the opponent's pointing down. Each player's browser persists the full board plus camera in `localStorage`, so reloading restores the table immediately — even with no opponent connected — and reconnecting merges the two boards. The app is a **free-form digital tabletop**: it does not enforce Homeworlds rules; the humans do.
+A single static page, `play.html`, in this repository, served over HTTPS (GitHub Pages). It renders the 36 Homeworlds pyramids as an SVG board ("the Bank" on the right, play field to the left). Both players connect **directly, peer-to-peer, with no application server** using WebRTC DataChannels whose handshake is exchanged by copy-pasting two shareable URLs; an **optional TURN relay** (configured with a credential-scoped API key) can carry the traffic when a symmetric NAT blocks a direct connection. Every board change (drag, flip, send a piece home, Reset, camera pan/zoom) is applied locally and streamed to the other player in real time. A piece's **pointing direction shows who last moved it**: a ship always points away from its owner, towards the other player, so each player sees their own ships pointing up and the opponent's pointing down. Each player's browser persists the full board plus camera in `localStorage`, so reloading restores the table immediately — even with no opponent connected — and reconnecting merges the two boards. The app is a **free-form digital tabletop**: it does not enforce Homeworlds rules; the humans do.
 
-Everything is German UI, matching the tone, colours and dark/light theme of the existing site. No accounts, no login, no server, no tracking.
+Everything is German UI, matching the tone, colours and dark/light theme of the existing site. No accounts, no login, no application server, no tracking.
 
 ## User Stories
 
@@ -152,7 +152,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - **Validation:** incoming messages are validated (known id, valid colour/size/kind/owner, finite coordinates) before application; invalid messages are ignored.
 
 ### Transport & signalling
-- **True serverless P2P.** WebRTC DataChannels for cross-device; a **two-way URL exchange**: host creates an offer link, guest opens it and produces a reply link, host opens the reply to connect. STUN only (public STUN servers; no TURN, no application server).
+- **True serverless P2P.** WebRTC DataChannels for cross-device; a **two-way URL exchange**: host creates an offer link, guest opens it and produces a reply link, host opens the reply to connect. Public **STUN by default**; an **optional TURN relay** (Metered) is fetched at load from a credential-scoped API key in `turn.config.js`, so symmetric NATs can still connect. No application server.
 - The blob (compressed SDP + `gameId` + host/guest role) travels in the **URL fragment** (`#…`), never to any server.
 - **Paste-box fallback** is always available for blobs too long for a URL.
 - **BroadcastChannel always on** for same-browser tabs; deduped against WebRTC by message id.
@@ -205,13 +205,13 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - **Undo / redo and move history.**
 - **True stacking / snapping / grouping** of pieces.
 - **Independent (non-synced) camera** or "free look".
-- **Accounts, login, cloud save, any application server, TURN relay, or analytics.**
+- **Accounts, login, cloud save, any application server, or analytics.**
 - **Multi-select / marquee / group drag.** (May be expanded later.)
 - **Internationalisation** beyond the German UI.
 
 ## Further Notes
 
-- **NAT caveat:** with no server there is no TURN relay; on strict or symmetric NATs WebRTC may fail to connect. The JSON export/import fallback is the escape hatch, and same-device tabs always work.
+- **NAT caveat:** a direct P2P connection uses STUN only by default, so on strict or symmetric NATs WebRTC may fail. Configuring a TURN relay (Metered) in `turn.config.js` fixes those cases; without it, the JSON export/import fallback is the escape hatch, and same-device tabs always work.
 - **HTTPS caveat:** WebRTC requires a secure context; the app must be served over HTTPS (GitHub Pages), not opened as `file://`.
 - **URL-length caveat:** large SDP blobs can exceed practical URL lengths in some chat apps; hence the always-available paste box and JSON export.
 - **Language/theme:** German UI and existing dark/light palette are shared with `index.html`/`guide.html`, but `play.html` keeps its own script/styles to avoid disturbing the reference pages.

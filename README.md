@@ -28,6 +28,16 @@ Danach <http://localhost:8000/> öffnen.
 npm test
 ```
 
+## Optional: TURN-Relay
+
+Standardmäßig verbinden sich beide Spieler direkt über öffentliche STUN-Server.
+Hinter einem symmetrischen NAT klappt das nicht; dafür kann optional ein
+TURN-Relay von [Metered](https://www.metered.ca/) genutzt werden. Dazu in
+`turn.config.js` die eigene Metered-Domain und den credential-gebundenen
+API-Key eintragen (Details stehen als Kommentar in der Datei). Das
+TURN-Passwort wird zur Laufzeit geladen und steht nicht im Repo. Bleibt die
+Datei leer, läuft alles wie bisher rein über STUN.
+
 ## Credits
 
 **Homeworlds** ist ein echtes Brettspiel von [Looney Labs][store]. Es ist ein
