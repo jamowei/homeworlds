@@ -42,11 +42,10 @@
 
     <h3>Steine</h3>
     <dl class="controls-list">
-      <div><dt>Bewegen</dt><dd>Stein mit der Maus oder dem Finger ziehen.</dd></div>
-      <div><dt>Umbauen</dt><dd>Rechtsklick wechselt zwischen Schiff und Station – auf dem Touchscreen: lange drücken.</dd></div>
-      <div><dt>Zurück in die Bank</dt><dd>Doppelklick schickt den Stein zurück auf seinen Platz in der Bank – oder zieh ihn einfach in das Bank-Feld rechts. Auf dem Touchscreen: Doppeltipp.</dd></div>
-      <div><dt>Richtung</dt><dd>Schiffe zeigen immer zum Gegner: deine nach oben, die des Gegners zu dir. Steine in der Bank gehören noch niemandem.</dd></div>
-      <div><dt>Zurücksetzen</dt><dd>Knopf „Zurücksetzen“: alle 36 Steine gehen zurück in die Bank.</dd></div>
+      <div><dt>Bewegen</dt><dd>Schiff mit der Maus oder dem Finger ziehen.</dd></div>
+      <div><dt>Umbauen</dt><dd>Rechtsklick wechselt zwischen Schiff und Stern – auf dem Touchscreen: lange drücken.</dd></div>
+      <div><dt>Zurück in die Bank</dt><dd>Doppelklick schickt das Schiff/Stern zurück in die Bank. Auf dem Touchscreen: Doppeltipp.</dd></div>
+      <div><dt>Zurücksetzen</dt><dd>Knopf „Zurücksetzen“: Starte eine neue Runde.</dd></div>
     </dl>
 
     <h3>Ansicht</h3>
@@ -61,8 +60,6 @@
       <div><dt>Verbinden</dt><dd>Einladungs-Link teilen; die Antwort des Gegenübers einfügen.</dd></div>
       <div><dt>Ohne Verbindung</dt><dd>Board als JSON exportieren und per Chat austauschen.</dd></div>
     </dl>
-
-    <p class="note">Freies Tabletop: Die Regeln kennt ihr – das Brett prüft sie nicht.</p>
   </div>
 </div>
 
@@ -101,7 +98,7 @@
     <div id="reply-box" hidden>
       <p class="note">Füge die Antwort deines Gegenübers ein:</p>
       <textarea id="reply-input" rows="3" placeholder="Antwort-Code"></textarea>
-      <button type="button" class="btn primary" id="accept-reply">Antwort übernehmen</button>
+      <button type="button" class="btn primary" id="accept-reply">Übernehmen</button>
     </div>
     <p class="handshake-error" id="handshake-error" hidden></p>
   </details>
@@ -118,7 +115,7 @@
 
   <!-- ticket 13: JSON export/import fallback (no peer connection required) -->
   <details class="fallback" id="fallback">
-    <summary><h2>Board als JSON austauschen</h2></summary>
+    <summary><h2>Board-Zustand sichern</h2></summary>
     <p class="note">
       Ohne Peer-Verbindung: exportiere dein Board und schicke den JSON-Text per Chat.
       Dein Gegenüber fügt ihn unten ein.
@@ -128,7 +125,7 @@
       <button type="button" class="btn" id="download-board">Herunterladen</button>
     </div>
     <textarea id="export-output" rows="3" readonly placeholder="Hier erscheint dein Board als JSON."></textarea>
-    <p class="note">Board des Gegenübers einfügen und laden:</p>
+    <p class="note">Board-Zustand einfügen und laden:</p>
     <textarea id="import-input" rows="3" placeholder="Board-JSON einfügen"></textarea>
     <button type="button" class="btn primary" id="import-board">Importieren</button>
     <p class="fallback-error" id="import-error" hidden></p>
