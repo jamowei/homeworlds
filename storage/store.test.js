@@ -118,3 +118,37 @@ test('a throwing backend degrades safely for preferences too', () => {
   assert.equal(store.setPreference('hw-name', 'Ada'), false);
   assert.doesNotThrow(() => store.getPreference('hw-name'));
 });
+
+test('leaving a game forgets its board, its remembered id and a preference', () => {
+  const storage = memoryStorage();
+  const store = createStore({ storage });
+  store.saveDocument({ gameId: 'g1', camera: { zoom: 1 } });
+  store.rememberGameId('g1');
+  store.setPreference('hw-role:g1', 'guest');
+
+  assert.equal(store.removeDocument('g1'), true);
+  assert.equal(store.forgetGameId(), true);
+  assert.equal(store.removePreference('hw-role:g1'), true);
+
+  assert.equal(store.loadDocument('g1'), null, 'board is gone');
+  assert.equal(store.lastGameId(), null, 'no game is remembered');
+  assert.equal(store.getPreference('hw-role:g1'), null, 'role is gone');
+  assert.equal(storage.map.size, 0, 'nothing is left behind');
+});
+
+test('removing missing keys is safe and reports success', () => {
+  const store = createStore({ storage: memoryStorage() });
+  assert.equal(store.removeDocument('never-saved'), true);
+  assert.equal(store.forgetGameId(), true);
+  assert.equal(store.removePreference('never-set'), true);
+});
+
+test('the removal helpers degrade safely on a throwing backend', () => {
+  const store = createStore({ storage: throwingStorage() });
+  assert.doesNotThrow(() => store.removeDocument('g1'));
+  assert.doesNotThrow(() => store.forgetGameId());
+  assert.doesNotThrow(() => store.removePreference('hw-role:g1'));
+  assert.equal(store.removeDocument('g1'), false);
+  assert.equal(store.forgetGameId(), false);
+  assert.equal(store.removePreference('hw-role:g1'), false);
+});

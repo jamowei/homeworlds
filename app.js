@@ -29,6 +29,10 @@ import { exportDocument, importDocument } from './core/io.js';
 
 const SAVE_DEBOUNCE_MS = 300;
 const NAME_KEY = 'hw-name';
+// Whether the player is currently in a game. It is what decides if the
+// create/join gate is shown on load, so "Spiel verlassen" can bring it back
+// without the player clearing storage by hand.
+const ACTIVE_KEY = 'hw-active';
 
 // A per-session peer id: it is the last-write-wins tiebreak between two peers.
 const PEER_ID = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)).slice(0, 12);
@@ -101,6 +105,12 @@ const saved = store.loadDocument(gameId);
 const restored = saved && saved.pieces && saved.camera ? migrateBoard(saved) : null;
 let doc = restored || createDocument(gameId);
 
+// Are we mid-game? An explicit flag wins; with no flag, an existing saved board
+// counts as active (so upgrading players keep resuming their game). A `?game=`
+// parameter is an explicit request to open that game.
+const storedActive = store.getPreference(ACTIVE_KEY);
+const isActive = requestedGameId ? true : storedActive === null ? !!restored : storedActive === '1';
+
 const renderer = createRenderer(svg, {
   bankSvg,
   onOperation: handleOperation,
@@ -136,7 +146,7 @@ function setDocument(next) {
 
 let opponentName = null;
 const transportStatus = new Map();
-const peers = createPeerRegistry({ self: PEER_ID, limit: 2 });
+let peers = createPeerRegistry({ self: PEER_ID, limit: 2 });
 const rejectedPeers = new Set();
 // Transports that have already sent their one `sync` for this connection. It is
 // cleared on disconnect so a reconnected transport syncs again.
@@ -149,6 +159,12 @@ const hub = createHub({
     updateStatus();
     if (status === 'connected' || status === 'available') onConnected(transport);
     else if (status === 'disconnected' || status === 'closed') syncedTransports.delete(transport);
+    if (status === 'failed') {
+      showError(
+        'handshake-error',
+        'Die Verbindung konnte nicht hergestellt werden. Prüfe die Netzwerke und versuche es über „Verbindung erneuern“ noch einmal.',
+      );
+    }
   },
 });
 
@@ -163,6 +179,7 @@ useBroadcast(gameId);
 function aggregateStatus() {
   const active = [...transportStatus.values()].filter((v) => v !== 'available');
   if (active.includes('connected')) return 'connected';
+  if (active.includes('failed')) return 'failed';
   if (active.includes('waiting')) return 'waiting';
   if (active.some((v) => v === 'disconnected' || v === 'closed')) return 'disconnected';
   if (active.length > 0 && active.every((v) => v === 'unavailable')) return 'unavailable';
@@ -180,6 +197,7 @@ function updateStatus() {
   let text = {
     connected: 'Verbunden',
     waiting: 'Warte auf Gegner',
+    failed: 'Verbindung fehlgeschlagen',
     disconnected: 'Getrennt',
     unavailable: 'Kein Sync verfügbar',
     offline: 'Nicht verbunden',
@@ -198,8 +216,11 @@ function updateZoom() {
 
 function onConnected(transport) {
   hideHandshake();
-  // One hello + one document sync per connection. Receiving a `sync` never
-  // triggers one in return, so the exchange cannot loop.
+  // One hello + one document sync per connection. A peer that hears our hello
+  // answers with a sync of its own, so both boards always cross — this matters
+  // for BroadcastChannel, whose `available` fires before any peer exists, so
+  // the sync sent here can be lost. Receiving a `sync` never triggers one in
+  // return, so the exchange cannot loop.
   if (transport && syncedTransports.has(transport)) return;
   if (transport) syncedTransports.add(transport);
   hub.send({ type: 'hello', id: messageId(), by: PEER_ID, name: ownName() });
@@ -231,6 +252,9 @@ function receiveRemote(message) {
     updateStatus();
     // Answer once so the other side also learns our name, without looping.
     hub.send({ type: 'hello-ack', id: messageId(), by: PEER_ID, name: ownName() });
+    // Send our board in answer too: a BroadcastChannel peer's own connect-sync
+    // happened before we existed, so this is the only copy it will receive.
+    sendSync();
     return;
   }
   if (message.type === 'hello-ack') {
@@ -328,14 +352,15 @@ function missingName() {
 function baseUrl() {
   return location.origin + location.pathname + location.search;
 }
-function linkFor(blob) {
-  return baseUrl() + encodeFragment(blob);
+async function linkFor(blob) {
+  return baseUrl() + (await encodeFragment(blob));
 }
-function decodeAnyBlob(text) {
+// Accept either a link/fragment or a paste-box code. The codec functions are
+// async (deflate runs through the platform streams), so this is too.
+async function decodeAnyBlob(text) {
   if (!text) return null;
   const trimmed = String(text).trim();
-  if (trimmed.startsWith('#') || trimmed.includes('hw=')) return decodeFragment(trimmed);
-  return decodePaste(trimmed);
+  return (await decodeFragment(trimmed)) || (await decodePaste(trimmed)) || null;
 }
 
 function showGate(show) {
@@ -372,6 +397,30 @@ function showError(id, message) {
   el.hidden = !message;
 }
 
+// --- Busy / loading indicator -------------------------------------------
+//
+// One full-screen spinner for the operations that can take a moment: creating
+// an offer or an answer waits for ICE gathering (up to a few seconds), and the
+// first board paint measures the layout. Without it the screen just freezes.
+
+function setBusy(busy, text) {
+  const overlay = $('busy');
+  if (!overlay) return;
+  if (text) {
+    const label = $('busy-text');
+    if (label) label.textContent = text;
+  }
+  overlay.hidden = !busy;
+  if (busy) document.body.setAttribute('aria-busy', 'true');
+  else document.body.removeAttribute('aria-busy');
+}
+
+// Remember whether the player is in a game (drives whether the gate shows on
+// the next load). "Spiel verlassen" clears it; create/join set it.
+function setActive(active) {
+  store.setPreference(ACTIVE_KEY, active ? '1' : '0');
+}
+
 function newGameId() {
   return (globalThis.crypto?.randomUUID?.() || `g-${Math.random().toString(36).slice(2)}`).slice(0, 16);
 }
@@ -396,6 +445,51 @@ function attachWebRtc(transport) {
   return transport;
 }
 
+// --- Leave game ---------------------------------------------------------
+//
+// A complete local reset that returns to the create/join gate without the
+// player having to clear storage by hand: disconnect any peer, drop this game's
+// saved board and remembered role, and start again from a clean table. The
+// player's name is deliberately kept — it is a preference, not game state.
+
+function leaveGame() {
+  const confirmed = window.confirm(
+    'Spiel verlassen? Die lokale Partie auf diesem Gerät wird gelöscht und du kommst zurück zur Auswahl. Eine bestehende Verbindung zum Gegner wird getrennt.',
+  );
+  if (!confirmed) return;
+  teardownWebRtc();
+  if (broadcast) {
+    hub.remove(broadcast);
+    broadcast = null;
+  }
+  // Forget this game locally: board, remembered id and role.
+  store.removeDocument(gameId);
+  store.forgetGameId();
+  store.removePreference(ROLE_PREFIX + gameId);
+  try {
+    globalThis.sessionStorage?.removeItem(ROLE_PREFIX + gameId);
+  } catch {
+    // sessionStorage can be unavailable (private mode); ignore.
+  }
+  setActive(false);
+  // Start over on a clean, unsaved table so the gate sits over the initial
+  // board. A fresh peer registry means a new game is not blocked by old peers.
+  gameId = 'local';
+  localRole = 'host';
+  peers = createPeerRegistry({ self: PEER_ID, limit: 2 });
+  rejectedPeers.clear();
+  transportStatus.clear();
+  opponentName = null;
+  useBroadcast(gameId);
+  doc = createDocument(gameId);
+  renderer.render(doc);
+  updateZoom();
+  updateStatus();
+  hideHandshake();
+  showError('gate-error', '');
+  showGate(true);
+}
+
 // --- Reconnect (ticket 11) ----------------------------------------------
 //
 // WebRTC cannot silently reconnect, so resuming the *same* game needs a fresh
@@ -410,19 +504,24 @@ async function reconnect() {
     return;
   }
   showError('gate-error', '');
-  showGate(false);
-  const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
+  setBusy(true, 'Neue Einladung wird vorbereitet …');
   try {
+    const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
     const offer = await transport.createOffer();
+    showGate(false);
     showHandshake({
       title: 'Verbindung erneuern',
       help: 'Dieselbe Partie: Sende diesen neuen Einladungs-Link und füge danach die Antwort wieder unten ein.',
-      link: linkFor(offer),
-      blob: encodePaste(offer),
+      link: await linkFor(offer),
+      blob: await encodePaste(offer),
       reply: true,
     });
   } catch (error) {
+    // Surface the error where it can be read, even though the gate was hidden.
+    showGate(true);
     showError('gate-error', error?.message || 'Verbindung konnte nicht erneuert werden.');
+  } finally {
+    setBusy(false);
   }
 }
 
@@ -434,21 +533,26 @@ async function createGame() {
     return;
   }
   showError('gate-error', '');
-  switchGame(newGameId(), { fresh: true });
-  setLocalRole('host');
-  const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
+  setBusy(true, 'Neues Spiel wird vorbereitet …');
   try {
+    switchGame(newGameId(), { fresh: true });
+    setLocalRole('host');
+    setActive(true);
+    const transport = attachWebRtc(createWebRtcTransport({ role: 'host', gameId }));
     const offer = await transport.createOffer();
     showGate(false);
     showHandshake({
       title: 'Einladung teilen',
       help: 'Sende diesen Link an deine Mitspielerin oder deinen Mitspieler. Sobald du die Antwort erhältst, füge sie unten ein.',
-      link: linkFor(offer),
-      blob: encodePaste(offer),
+      link: await linkFor(offer),
+      blob: await encodePaste(offer),
       reply: true,
     });
   } catch (error) {
+    showGate(true);
     showError('gate-error', error?.message || 'Verbindung konnte nicht aufgebaut werden.');
+  } finally {
+    setBusy(false);
   }
 }
 
@@ -459,21 +563,26 @@ async function joinAsGuest(offerBlob) {
     showError('gate-error', block);
     return;
   }
-  switchGame(offerBlob.gameId);
-  setLocalRole('guest');
-  const transport = attachWebRtc(createWebRtcTransport({ role: 'guest', gameId: offerBlob.gameId }));
+  setBusy(true, 'Einladung wird verarbeitet …');
   try {
+    switchGame(offerBlob.gameId);
+    setLocalRole('guest');
+    setActive(true);
+    const transport = attachWebRtc(createWebRtcTransport({ role: 'guest', gameId: offerBlob.gameId }));
     const answer = await transport.createAnswer(offerBlob);
     showGate(false);
     showHandshake({
       title: 'Antwort senden',
       help: 'Schicke diesen Antwort-Link zurück an den Gastgeber. Danach seid ihr verbunden.',
-      link: linkFor(answer),
-      blob: encodePaste(answer),
+      link: await linkFor(answer),
+      blob: await encodePaste(answer),
       reply: false,
     });
   } catch (error) {
+    showGate(true);
     showError('gate-error', error?.message || 'Einladung konnte nicht verarbeitet werden.');
+  } finally {
+    setBusy(false);
   }
 }
 
@@ -483,7 +592,7 @@ async function acceptReplyText(text) {
     showError('handshake-error', block);
     return;
   }
-  const blob = decodeAnyBlob(text);
+  const blob = await decodeAnyBlob(text);
   if (!blob) {
     showError('handshake-error', 'Das ist kein gültiger Antwort-Code.');
     return;
@@ -492,16 +601,19 @@ async function acceptReplyText(text) {
     showError('handshake-error', 'Keine offene Einladung. Erstelle zuerst ein neues Spiel.');
     return;
   }
+  setBusy(true, 'Antwort wird übernommen …');
   try {
     await webrtc.acceptAnswer(blob);
     showError('handshake-error', '');
   } catch (error) {
     showError('handshake-error', error?.message || 'Antwort konnte nicht übernommen werden.');
+  } finally {
+    setBusy(false);
   }
 }
 
 async function joinFromText(text) {
-  const blob = decodeAnyBlob(text);
+  const blob = await decodeAnyBlob(text);
   if (!blob || !blob.sdp) {
     showError('gate-error', 'Das ist kein gültiger Einladungs-Code.');
     return;
@@ -606,14 +718,19 @@ requestAnimationFrame(() => {
   if (!restored) {
     // No saved board: fit the play field on screen immediately.
     renderer.fitToWorld();
-    return;
+  } else {
+    // A restored camera may predate the current play field (the world or the
+    // Bank may have changed); keep it inside so the Bank stays off the board.
+    const camera = renderer.clampCamera(doc.camera);
+    if (camera.x !== doc.camera.x || camera.y !== doc.camera.y || camera.zoom !== doc.camera.zoom) {
+      setDocument({ ...doc, camera: { ...doc.camera, ...camera } });
+    }
   }
-  // A restored camera may predate the current play field (the world or the
-  // Bank may have changed); keep it inside so the Bank stays off the board.
-  const camera = renderer.clampCamera(doc.camera);
-  if (camera.x !== doc.camera.x || camera.y !== doc.camera.y || camera.zoom !== doc.camera.zoom) {
-    setDocument({ ...doc, camera: { ...doc.camera, ...camera } });
-  }
+  // The first paint is done: cancel the slow-load spinner and hide it.
+  clearTimeout(globalThis.__hwLoadTimer);
+  const overlay = $('busy');
+  if (overlay) overlay.dataset.ready = '1';
+  setBusy(false);
 });
 
 addEventListener('pagehide', flushSave);
@@ -628,9 +745,13 @@ $('reset')?.addEventListener('click', () => {
 
 $('create-game')?.addEventListener('click', () => createGame());
 $('reconnect')?.addEventListener('click', () => reconnect());
+$('leave-game')?.addEventListener('click', () => leaveGame());
 $('join-game')?.addEventListener('click', () => joinFromText($('join-input')?.value));
 $('accept-reply')?.addEventListener('click', () => acceptReplyText($('reply-input')?.value));
-$('gate-skip')?.addEventListener('click', () => showGate(false));
+$('gate-skip')?.addEventListener('click', () => {
+  setActive(true);
+  showGate(false);
+});
 
 // "Steuerung" dialog: open from the toolbar, close by button, backdrop or Esc.
 $('controls-open')?.addEventListener('click', () => showControls(true));
@@ -680,18 +801,26 @@ if (webRtcBlockReason()) {
 }
 
 // Opening an invite link shows the board immediately and produces a reply.
-if (location.hash && location.hash.includes('hw=')) {
-  const blob = decodeFragment(location.hash);
+const hasInvite = /#hw2?=/.test(location.hash || '');
+if (hasInvite) {
   showGate(false);
-  // On `file://` (or without WebRTC) the warning is shown and no peer
-  // connection is attempted; tab sync and JSON exchange still work.
-  if (!webRtcBlockReason()) {
-    if (blob && blob.role === 'guest') {
-      acceptReplyText(location.hash);
-    } else if (blob) {
-      joinAsGuest(blob);
+  // Decoding runs through the async codec, so answer outside the sync flow.
+  (async () => {
+    const blob = await decodeFragment(location.hash);
+    if (!blob) {
+      showError('gate-error', 'Der Einladungs-Link ist ungültig oder unvollständig.');
+      showGate(true);
+      return;
     }
-  }
+    // On `file://` (or without WebRTC) the warning is shown and no peer
+    // connection is attempted; tab sync and JSON exchange still work.
+    if (webRtcBlockReason()) return;
+    if (blob.role === 'guest') {
+      await acceptReplyText(location.hash);
+    } else {
+      await joinAsGuest(blob);
+    }
+  })();
 } else {
-  showGate(!savedName);
+  showGate(!isActive);
 }

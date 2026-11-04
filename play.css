@@ -68,6 +68,7 @@
 .zoom { font-variant-numeric: tabular-nums; }
 .status[data-state="connected"] { color: var(--green); border-color: var(--green); }
 .status[data-state="waiting"] { color: var(--yellow); border-color: var(--yellow); }
+.status[data-state="failed"] { color: var(--red); border-color: var(--red); }
 .status[data-state="offline"] { color: var(--muted); }
 
 .play-toolbar .spacer { flex: 1; }
@@ -144,6 +145,53 @@
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
 }
 .gate-card h2 { font-size: 1.25rem; margin-bottom: 0.4rem; }
+
+/* Loading overlay: a full-screen spinner for actions that take a moment
+   (creating an invite, accepting a reply) and for a slow first load. */
+.busy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 20, 32, 0.72);
+  backdrop-filter: blur(3px);
+}
+:root[data-theme="light"] .busy-overlay { background: rgba(238, 241, 248, 0.78); }
+
+.busy-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.5rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+}
+.busy-text {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.spinner {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--blue);
+  animation: hw-spin 0.8s linear infinite;
+}
+@keyframes hw-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2s; }
+}
 
 /* Controls ("Steuerung") dialog. */
 .controls-card {

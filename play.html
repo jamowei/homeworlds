@@ -60,6 +60,7 @@
       <div><dt>Spiel starten</dt><dd>Name eingeben, dann „Neues Spiel erstellen“ oder eine Einladung einfügen.</dd></div>
       <div><dt>Verbinden</dt><dd>Einladungs-Link teilen; die Antwort des Gegenübers einfügen.</dd></div>
       <div><dt>Ohne Verbindung</dt><dd>Board als JSON exportieren und per Chat austauschen.</dd></div>
+      <div><dt>Spiel verlassen</dt><dd>Beendet die Partie auf diesem Gerät und zeigt wieder die Auswahl zum Erstellen oder Beitreten.</dd></div>
     </dl>
   </div>
 </div>
@@ -82,6 +83,7 @@
     <span class="spacer"></span>
     <button type="button" class="btn" id="controls-open" aria-haspopup="dialog">Steuerung</button>
     <button type="button" class="btn" id="reconnect">Verbindung erneuern</button>
+    <button type="button" class="btn" id="leave-game">Spiel verlassen</button>
     <button type="button" class="btn danger" id="reset">Zurücksetzen</button>
   </div>
 
@@ -133,6 +135,14 @@
   </details>
 </div>
 
+<!-- loading feedback: shown while an action runs, or on a slow first load -->
+<div class="busy-overlay" id="busy" hidden>
+  <div class="busy-card" role="status" aria-live="polite">
+    <span class="spinner" aria-hidden="true"></span>
+    <p class="busy-text" id="busy-text">Bitte warten …</p>
+  </div>
+</div>
+
 <script>
   (function () {
     function applyTheme(theme) {
@@ -154,6 +164,18 @@
       applyTheme(next);
       try { localStorage.setItem("hw-theme", next); } catch (e) {}
     };
+
+    // Only surface the loading spinner if the board has not signalled ready in
+    // time, so a fast load does not flash. app.js clears this timer and sets
+    // `data-ready` once the first paint is done.
+    window.__hwLoadTimer = setTimeout(function () {
+      var overlay = document.getElementById("busy");
+      if (overlay && !overlay.dataset.ready) {
+        overlay.hidden = false;
+        var label = document.getElementById("busy-text");
+        if (label) label.textContent = "Board wird geladen …";
+      }
+    }, 120);
   })();
 </script>
 <script type="module" src="app.js"></script>

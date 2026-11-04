@@ -10,6 +10,14 @@ test('the ICE configuration is STUN only (no TURN relay)', () => {
   }
 });
 
+test('several independent STUN servers are offered, so one blocked provider is survivable', () => {
+  const hosts = DEFAULT_ICE_SERVERS.map((server) => String(server.urls));
+  assert.ok(hosts.length >= 3, `expected at least 3 STUN servers, got ${hosts.length}`);
+  assert.ok(hosts.some((url) => url.includes('google')), 'keeps the original Google servers');
+  assert.ok(hosts.some((url) => url.includes('cloudflare')), 'adds Cloudflare');
+  assert.equal(new Set(hosts).size, hosts.length, 'no duplicate servers');
+});
+
 test('WebRTC is reported unsupported in Node', () => {
   assert.equal(isWebRtcSupported(), false);
 });

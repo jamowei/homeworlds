@@ -4,12 +4,37 @@
 // blob (e.g. { v, role, gameId, sdp }) into a shareable URL fragment and into a
 // paste-box string, and decodes either back to the blob.
 //
-// Pipeline (both directions): compact JSON -> UTF-8 bytes -> LZW -> base64url.
-// We deliberately avoid `CompressionStream` (not available in every target) and
-// use a small, self-contained LZW codec so the round-trip is byte-exact and
-// works unchanged in the browser and in plain Node.
+// Pipeline (both directions): compact JSON -> UTF-8 -> deflate-raw -> base64url.
+// `CompressionStream`/`DecompressionStream` are available in every browser that
+// can also do WebRTC (and in Node), and deflate shrinks an SDP several times
+// better than a hand-rolled LZW did — which matters because the whole blob has
+// to fit in a chat message. The original LZW codec is kept for two reasons: as
+// a fallback when CompressionStream is missing, and to decode links produced by
+// older versions of the app (`#hw=` / `HW1:`), so an invite that is already in
+// flight keeps working.
 //
 // No DOM, no storage, no network. Malformed input returns null; nothing throws.
+//
+// The public encode/decode functions are async because CompressionStream is
+// stream-based. Callers simply await them.
+
+// A payload is `"z" + base64url(deflate)` or `"l" + base64url(LZW)`. The one
+// character marker keeps `decodeBlob` self-describing, while the fragment/paste
+// prefixes carry a version so a new link can never be mistaken for a legacy
+// one (whose payload starts directly with base64url, with no marker).
+const MARKER_DEFLATE = 'z';
+const MARKER_LZW = 'l';
+
+const FRAGMENT_PREFIX = 'hw2=';
+const LEGACY_FRAGMENT_PREFIX = 'hw=';
+const PASTE_PREFIX = 'HW2:';
+const LEGACY_PASTE_PREFIX = 'HW1:';
+
+const SUPPORTS_DEFLATE =
+  typeof CompressionStream === 'function' &&
+  typeof DecompressionStream === 'function' &&
+  typeof Blob === 'function' &&
+  typeof Response === 'function';
 
 // ---------------------------------------------------------------------------
 // base64url (RFC 4648 §5), hand-rolled so there is no dependency on btoa/Buffer
@@ -64,6 +89,7 @@ function base64UrlToBytes(text) {
 // ---------------------------------------------------------------------------
 // LZW over a byte stream. Codes are 16-bit big-endian; 0-255 are literals and
 // 256 is CLEAR (used to reset a full dictionary). 257+ are dictionary entries.
+// Kept for the fallback encoder and, above all, for decoding legacy payloads.
 // ---------------------------------------------------------------------------
 
 const CLEAR = 256;
@@ -171,26 +197,26 @@ function lzwDecompress(bytes) {
 }
 
 // ---------------------------------------------------------------------------
-// Blob -> payload and back
+// deflate-raw, via the platform streams (no dependency)
 // ---------------------------------------------------------------------------
 
-// Compact JSON -> UTF-8 -> LZW -> base64url.
-export function encodeBlob(blob) {
-  const json = JSON.stringify(blob);
-  const utf8 = new TextEncoder().encode(json);
-  return bytesToBase64Url(lzwCompress(utf8));
+async function deflateBytes(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-// base64url -> LZW -> UTF-8 -> JSON. Returns null on any malformed input.
-export function decodeBlob(payload) {
-  if (typeof payload !== 'string' || payload.length === 0) return null;
-  const compressed = base64UrlToBytes(payload.trim());
-  if (!compressed) return null;
-  const plain = lzwDecompress(compressed);
-  if (!plain) return null;
+async function inflateBytes(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+// UTF-8 bytes -> JSON object, or null. Rejects anything that is not a plain
+// object (arrays, primitives, null) so a valid-but-wrong payload is ignored.
+function parseBlobBytes(bytes) {
+  if (!bytes) return null;
   let blob;
   try {
-    blob = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(plain));
+    blob = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
   } catch {
     return null;
   }
@@ -199,36 +225,82 @@ export function decodeBlob(payload) {
 }
 
 // ---------------------------------------------------------------------------
+// Blob -> payload and back
+// ---------------------------------------------------------------------------
+
+// Compact JSON -> UTF-8 -> deflate-raw -> base64url (or LZW when the platform
+// has no CompressionStream). The returned string starts with a format marker.
+export async function encodeBlob(blob) {
+  const utf8 = new TextEncoder().encode(JSON.stringify(blob));
+  if (SUPPORTS_DEFLATE) {
+    try {
+      return MARKER_DEFLATE + bytesToBase64Url(await deflateBytes(utf8));
+    } catch {
+      // Deflate failed for some reason; fall back to the LZW path below.
+    }
+  }
+  return MARKER_LZW + bytesToBase64Url(lzwCompress(utf8));
+}
+
+// Marker-prefixed payload -> blob. Returns null on any malformed input.
+export async function decodeBlob(payload) {
+  if (typeof payload !== 'string' || payload.length === 0) return null;
+  const marker = payload[0];
+  const bytes = base64UrlToBytes(payload.slice(1));
+  if (!bytes) return null;
+  if (marker === MARKER_DEFLATE) {
+    if (!SUPPORTS_DEFLATE) return null;
+    try {
+      return parseBlobBytes(await inflateBytes(bytes));
+    } catch {
+      return null;
+    }
+  }
+  if (marker === MARKER_LZW) {
+    return parseBlobBytes(lzwDecompress(bytes));
+  }
+  return null;
+}
+
+// Legacy payloads (before deflate) were base64url(LZW) with no marker.
+function decodeLegacyPayload(base64) {
+  const bytes = base64UrlToBytes(base64);
+  if (!bytes) return null;
+  return parseBlobBytes(lzwDecompress(bytes));
+}
+
+// ---------------------------------------------------------------------------
 // Packaging: URL fragment and paste-box string
 // ---------------------------------------------------------------------------
 
-const FRAGMENT_PREFIX = '#hw=';
-const PASTE_PREFIX = 'HW1:';
-
-// A URL fragment string, e.g. `#hw=AQID...`, ready to append to the page URL.
-export function encodeFragment(blob) {
-  return FRAGMENT_PREFIX + encodeBlob(blob);
+// A URL fragment string, e.g. `#hw2=AQID...`, ready to append to the page URL.
+export async function encodeFragment(blob) {
+  return '#' + FRAGMENT_PREFIX + (await encodeBlob(blob));
 }
 
-// Decodes a fragment string, a full URL, or a bare `hw=` token. Null if absent.
-export function decodeFragment(text) {
+// Decodes a new fragment, a legacy `#hw=` fragment, a full URL, or a bare
+// `hw2=`/`hw=` token. Null if absent or malformed.
+export async function decodeFragment(text) {
   if (typeof text !== 'string') return null;
   let s = text.trim();
   const hash = s.indexOf('#');
   if (hash !== -1) s = s.slice(hash + 1);
-  if (!s.startsWith('hw=')) return null;
-  return decodeBlob(s.slice(3));
+  if (s.startsWith(FRAGMENT_PREFIX)) return decodeBlob(s.slice(FRAGMENT_PREFIX.length));
+  if (s.startsWith(LEGACY_FRAGMENT_PREFIX)) return decodeLegacyPayload(s.slice(LEGACY_FRAGMENT_PREFIX.length));
+  return null;
 }
 
-// A paste-box string, e.g. `HW1:AQID...`, for when the link is too long.
-export function encodePaste(blob) {
-  return PASTE_PREFIX + encodeBlob(blob);
+// A paste-box string, e.g. `HW2:AQID...`, for when the link is too long.
+export async function encodePaste(blob) {
+  return PASTE_PREFIX + (await encodeBlob(blob));
 }
 
-// Decodes a paste-box string (surrounding whitespace tolerated). Null if absent.
-export function decodePaste(text) {
+// Decodes a new `HW2:` code or a legacy `HW1:` code (surrounding whitespace
+// tolerated). Null if absent or malformed.
+export async function decodePaste(text) {
   if (typeof text !== 'string') return null;
   const s = text.trim();
-  if (!s.startsWith(PASTE_PREFIX)) return null;
-  return decodeBlob(s.slice(PASTE_PREFIX.length));
+  if (s.startsWith(PASTE_PREFIX)) return decodeBlob(s.slice(PASTE_PREFIX.length));
+  if (s.startsWith(LEGACY_PASTE_PREFIX)) return decodeLegacyPayload(s.slice(LEGACY_PASTE_PREFIX.length));
+  return null;
 }

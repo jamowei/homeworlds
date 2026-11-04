@@ -65,6 +65,16 @@ export function createStore(options = {}) {
     }
   }
 
+  function remove(key) {
+    try {
+      if (!storage || typeof storage.removeItem !== 'function') return false;
+      storage.removeItem(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function documentKey(gameId) {
     return `${DOCUMENT_KEY_PREFIX}${gameId}`;
   }
@@ -92,6 +102,13 @@ export function createStore(options = {}) {
     }
   }
 
+  // Forget one game's saved board. Used by "Spiel verlassen": a complete local
+  // reset without the user having to clear storage by hand.
+  function removeDocument(gameId) {
+    if (!gameId) return false;
+    return remove(documentKey(gameId));
+  }
+
   function rememberGameId(gameId) {
     if (!gameId) return false;
     return write(LAST_GAME_KEY, String(gameId));
@@ -99,6 +116,11 @@ export function createStore(options = {}) {
 
   function lastGameId() {
     return read(LAST_GAME_KEY);
+  }
+
+  // Forget the remembered game id, so the next visit does not auto-resume.
+  function forgetGameId() {
+    return remove(LAST_GAME_KEY);
   }
 
   // Generic preference access through the same never-throwing seam as the
@@ -113,6 +135,11 @@ export function createStore(options = {}) {
     return write(String(key), String(value));
   }
 
+  function removePreference(key) {
+    if (!key) return false;
+    return remove(String(key));
+  }
+
   function isAvailable() {
     return probe(storage);
   }
@@ -120,10 +147,13 @@ export function createStore(options = {}) {
   return {
     loadDocument,
     saveDocument,
+    removeDocument,
     rememberGameId,
     lastGameId,
+    forgetGameId,
     getPreference,
     setPreference,
+    removePreference,
     isAvailable,
   };
 }

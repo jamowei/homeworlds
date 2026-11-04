@@ -17,6 +17,10 @@
 export const DEFAULT_ICE_SERVERS = Object.freeze([
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  // Extra public STUN servers: more chances to obtain a server-reflexive
+  // candidate when one provider is unreachable or blocked on a given network.
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: 'stun:global.stun.twilio.com:3478' },
 ]);
 
 const GATHER_TIMEOUT_MS = 4000;
@@ -99,8 +103,13 @@ export function createWebRtcTransport(options = {}) {
         case 'connected':
           emitStatus('connected');
           break;
-        case 'disconnected':
+        // `failed` is terminal for this connection: report it distinctly so the
+        // UI can say so instead of waiting forever on a handshake that will
+        // never complete.
         case 'failed':
+          emitStatus('failed');
+          break;
+        case 'disconnected':
         case 'closed':
           emitStatus('disconnected');
           break;
