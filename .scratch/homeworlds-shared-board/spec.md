@@ -127,7 +127,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 
 ### Document model
 - Piece: `{ id, color, size, kind: 'ship'|'star', x, y, owner }` where kind `ship` = triangle, `star` = square, and `owner ∈ {null, 'host', 'guest'}`.
-- **No rotation is stored.** `owner` records which player last moved the piece (null = neutral, e.g. still in the Bank). The direction it is drawn in is a pure function of the owner and the *viewer's* role, so the same piece points up for one player and down for the other.
+- **No rotation is stored.** `owner` records which player last moved the piece (null = neutral, e.g. still in the Bank). The direction it is drawn in is a pure function of the owner and the *viewer's* role, so the same piece points up for one player and down for the other. The play field is also **mirrored top-to-bottom** for one role (the `guest`), so each player sees their own pieces at the bottom and the opponent's at the top — a piece the host drops low shows up high for the guest. The mapping is applied only when drawing and when turning pointer input back into world coordinates; pieces and the camera are still stored and synced in world coordinates, and the Bank panel is never mirrored.
 - `id` is deterministic and encodes colour/size/copy index (e.g. `red-large-2`), so both peers construct an identical base document without transmitting it. The Bank "home" slot for a piece is a pure function of its id.
 - `color ∈ {yellow, green, red, blue}`, `size ∈ {1,2,3}`.
 - Camera: `{ x, y, zoom }`, `zoom ∈ [0.25, 1]`.
@@ -179,7 +179,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - German UI, reusing the existing `style.css` colour tokens and dark/light theme; `play.html` keeps its own JS/CSS so the reference pages are untouched.
 - Header is just "Homeworlds" — no subheading and no bottom-nav links.
 - The board and the Bank sit side by side: the table takes five sevenths, the Bank a fixed panel for the remaining two sevenths (stacked on narrow screens). The Bank never covers the play field.
-- Toolbar shows the connection status and the current zoom level, plus the "Steuerung", "Verbindung erneuern" and "Zurücksetzen" buttons.
+- Toolbar shows the connection status and the current zoom level, with "Steuerung" on the left and, on the right, "Verbindung erneuern", "Zurücksetzen" and "Spiel verlassen" ("Spiel verlassen" in red).
 - The invite panel and the JSON exchange panel collapse (fold) so the board gets the space; "Board als JSON austauschen" sits below the board.
 - A "Steuerung" dialog lists every action (move, flip, send home, reset, zoom, pan, connect) so a new player learns the gestures.
 
