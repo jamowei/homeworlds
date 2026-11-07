@@ -56,6 +56,15 @@ export function createHub({ onMessage, onStatus } = {}) {
     transports.delete(transport);
   }
 
+  // Remove a transport from the fan-out without closing it yet. The app uses
+  // this before "Spiel verlassen": it sends a `bye` first, detaches the old
+  // transports so they cannot receive or deliver anything else, and closes them
+  // a moment later so the `bye` is not discarded by an immediate close.
+  function detach(transport) {
+    transports.delete(transport);
+    return transport;
+  }
+
   function close() {
     for (const transport of transports) transport.close?.();
     transports.clear();
@@ -64,6 +73,7 @@ export function createHub({ onMessage, onStatus } = {}) {
   return {
     add,
     remove,
+    detach,
     send,
     close,
     get transports() {

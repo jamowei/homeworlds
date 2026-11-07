@@ -201,6 +201,45 @@ let connectionPath = null;
 const transportStatus = new Map();
 let peers = createPeerRegistry({ self: PEER_ID, limit: 2 });
 const rejectedPeers = new Set();
+// Which transports have delivered messages from which peer. A peer can be
+// reachable over BroadcastChannel *and* WebRTC in the same browser, so a closed
+// transport may only forget a peer when no other source is left.
+const peerSources = new Map();
+
+function rememberPeerSource(peerId, source) {
+  if (!peerId || !source) return;
+  let sources = peerSources.get(peerId);
+  if (!sources) {
+    sources = new Set();
+    peerSources.set(peerId, sources);
+  }
+  sources.add(source);
+}
+
+// Returns true when this was the peer's last transport, i.e. the peer is gone.
+function dropPeerSource(peerId, source) {
+  const sources = peerSources.get(peerId);
+  if (!sources) return false;
+  sources.delete(source);
+  if (sources.size > 0) return false;
+  peerSources.delete(peerId);
+  return true;
+}
+
+function forgetTransport(transport) {
+  if (!transport) return;
+  let removed = false;
+  for (const peerId of [...peerSources.keys()]) {
+    if (dropPeerSource(peerId, transport)) {
+      peers.remove(peerId);
+      removed = true;
+    }
+  }
+  if (removed) {
+    opponentName = null;
+    updateStatus();
+  }
+}
 // Transports that have already sent their one `sync` for this connection. It is
 // cleared on disconnect so a reconnected transport syncs again.
 const syncedTransports = new Set();
@@ -211,7 +250,10 @@ const hub = createHub({
     transportStatus.set(transport, status);
     updateStatus();
     if (status === 'connected' || status === 'available') onConnected(transport);
-    else if (status === 'disconnected' || status === 'closed') syncedTransports.delete(transport);
+    else if (status === 'disconnected' || status === 'closed') {
+      syncedTransports.delete(transport);
+      forgetTransport(transport);
+    }
     if (status === 'failed') {
       showError(
         'handshake-error',
@@ -312,7 +354,7 @@ function dispatch(message) {
   hub.send(message);
 }
 
-function receiveRemote(message) {
+function receiveRemote(message, source) {
   if (!message || typeof message !== 'object') return;
   if (message.type === 'hello') {
     if (message.by === PEER_ID || !message.by) return;
@@ -322,6 +364,7 @@ function receiveRemote(message) {
       hub.send({ type: 'reject', id: messageId(), by: PEER_ID });
       return;
     }
+    rememberPeerSource(message.by, source);
     if (message.name) opponentName = message.name;
     // A registered peer means the handshake is done. WebRTC also fires a
     // `connected` status, but BroadcastChannel connects same-browser tabs
@@ -337,14 +380,31 @@ function receiveRemote(message) {
   }
   if (message.type === 'hello-ack') {
     if (message.by && message.by !== PEER_ID && (peers.has(message.by) || peers.register(message.by))) {
+      rememberPeerSource(message.by, source);
       if (message.name) opponentName = message.name;
       hideHandshake();
       updateStatus();
     }
     return;
   }
+  // "Spiel verlassen" sends this before closing so the other side can drop the
+  // peer immediately. WebRTC also emits `onclose`; BroadcastChannel has no
+  // close notification at all, so this is the only signal for same-browser tabs.
+  if (message.type === 'bye') {
+    if (message.by && message.by !== PEER_ID && peers.has(message.by)) {
+      // Reflect the goodbye immediately, even before the socket close arrives.
+      if (source) transportStatus.set(source, 'disconnected');
+      if (dropPeerSource(message.by, source)) {
+        peers.remove(message.by);
+        opponentName = null;
+      }
+      updateStatus();
+    }
+    return;
+  }
   if (message.type === 'reject') return;
   if (message.by && rejectedPeers.has(message.by)) return;
+  if (message.by && message.by !== PEER_ID) rememberPeerSource(message.by, source);
   // A reconnect sync carries a whole document; merge it per piece by newest
   // version (tie-broken by peer id) so offline divergence resolves itself.
   if (message.type === 'sync') {
@@ -468,11 +528,20 @@ function showHandshake(config) {
   if (replyBox) replyBox.hidden = !config.reply;
   showError('handshake-error', '');
 }
-// Fold the invite panel closed, then take it out of the layout and clear its
-// inputs. Clearing here also covers "Spiel verlassen": hiding the panel alone
-// kept the pasted reply in the DOM, so the next handshake offered a stale
-// answer. The inputs are cleared only once the fold has finished, so the link
-// does not blank out mid-animation.
+// Clear the invite link, the pasted reply and any handshake error immediately.
+// The panel may still be folding out; leaving a stale invite in the DOM made it
+// reappear after "Spiel verlassen".
+function clearHandshakeInputs() {
+  const reply = $('reply-input');
+  if (reply) reply.value = '';
+  const link = $('handshake-link');
+  if (link) link.value = '';
+  showError('handshake-error', '');
+}
+
+// Fold the invite panel closed, then take it out of the layout. The inputs are
+// cleared right away (not after the animation) so no stale invite can survive a
+// leave, even if the panel is already mid-fold.
 function hideHandshake() {
   const panel = $('handshake');
   if (panel && !panel.hidden && !panel.classList.contains('is-folded')) {
@@ -485,7 +554,9 @@ function hideHandshake() {
     handshakeHideTimer = setTimeout(() => resetHandshake(panel), HANDSHAKE_FOLD_MS);
   } else if (panel && panel.hidden) {
     resetHandshake(panel);
+    return;
   }
+  clearHandshakeInputs();
 }
 function resetHandshake(panel) {
   if (panel) {
@@ -493,11 +564,7 @@ function resetHandshake(panel) {
     panel.classList.remove('is-folded');
     panel.style.removeProperty('--handshake-max');
   }
-  const reply = $('reply-input');
-  if (reply) reply.value = '';
-  const link = $('handshake-link');
-  if (link) link.value = '';
-  showError('handshake-error', '');
+  clearHandshakeInputs();
 }
 function showError(id, message) {
   const el = $(id);
@@ -608,11 +675,32 @@ function leaveGame() {
     'Spiel verlassen? Die lokale Partie auf diesem Gerät wird gelöscht und du kommst zurück zur Auswahl. Eine bestehende Verbindung zum Gegner wird getrennt.',
   );
   if (!confirmed) return;
-  teardownWebRtc();
-  if (broadcast) {
-    hub.remove(broadcast);
-    broadcast = null;
+
+  // Say goodbye while the channels are still open. Then detach both transports
+  // from the hub (so the reset below cannot send into the old connection) and
+  // drop their handlers (so a late message cannot mutate the fresh board). The
+  // close itself waits one tick: BroadcastChannel.close() discards queued
+  // messages and has no close event, so an immediate close would lose the bye.
+  hub.send({ type: 'bye', id: messageId(), by: PEER_ID });
+  const oldWebrtc = webrtc;
+  const oldBroadcast = broadcast;
+  webrtc = null;
+  broadcast = null;
+  connectionPath = null;
+  if (oldWebrtc) {
+    syncedTransports.delete(oldWebrtc);
+    oldWebrtc.setHandlers({ onMessage: null, onStatus: null, onError: null });
+    hub.detach(oldWebrtc);
   }
+  if (oldBroadcast) {
+    oldBroadcast.setHandlers({ onMessage: null, onStatus: null });
+    hub.detach(oldBroadcast);
+  }
+  setTimeout(() => {
+    oldWebrtc?.close?.();
+    oldBroadcast?.close?.();
+  }, 100);
+
   // Forget this game locally: board, remembered id and role.
   store.removeDocument(gameId);
   store.forgetGameId();
@@ -628,6 +716,7 @@ function leaveGame() {
   gameId = 'local';
   localRole = 'host';
   peers = createPeerRegistry({ self: PEER_ID, limit: 2 });
+  peerSources.clear();
   rejectedPeers.clear();
   transportStatus.clear();
   opponentName = null;
@@ -637,6 +726,8 @@ function leaveGame() {
   updateZoom();
   updateStatus();
   hideHandshake();
+  const joinInput = $('join-input');
+  if (joinInput) joinInput.value = '';
   showError('gate-error', '');
   showGate(true);
 }

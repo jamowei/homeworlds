@@ -158,6 +158,7 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - **Paste-box fallback** is always available for blobs too long for a URL.
 - **BroadcastChannel always on** for same-browser tabs; deduped against WebRTC by message id.
 - **Exactly two players.** Later joiners are rejected.
+- **Leaving tears the session down.** "Spiel verlassen" sends a `bye`, closes both transports (WebRTC and BroadcastChannel), and forgets the peer, so the opponent's toolbar flips to "Getrennt" instead of staying on "Verbunden". It also clears the invite link, reply box and gate join field immediately.
 - **JSON board export/import** as an additional serverless fallback (no WebRTC).
 - **HTTPS required.** `file://` shows a warning and disables WebRTC (BroadcastChannel fallback still works locally).
 

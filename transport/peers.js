@@ -19,6 +19,9 @@ export function createPeerRegistry({ self = null, limit = 2 } = {}) {
     has(id) {
       return peers.has(id);
     },
+    remove(id) {
+      return peers.delete(id);
+    },
     size() {
       return peers.size;
     },

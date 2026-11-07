@@ -32,3 +32,15 @@ test('an empty id is not a peer', () => {
   assert.equal(peers.register(null), false);
   assert.equal(peers.size(), 1);
 });
+
+test('a peer can be removed when its transport disconnects, freeing the slot', () => {
+  const peers = createPeerRegistry({ self: 'me', limit: 2 });
+  peers.register('a');
+  assert.equal(peers.isFull(), true);
+  assert.equal(peers.remove('a'), true);
+  assert.equal(peers.has('a'), false);
+  assert.equal(peers.size(), 1);
+  assert.equal(peers.isFull(), false);
+  assert.equal(peers.register('b'), true, 'a new opponent fits after a disconnect');
+  assert.equal(peers.remove('missing'), false);
+});

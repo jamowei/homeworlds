@@ -87,3 +87,18 @@ test('a transport is registered before it starts, so a status it emits during st
   assert.equal(t.sent.length, 1);
   assert.equal(t.sent[0].id, 'hello');
 });
+
+test('a detached transport stops receiving sends but is not closed yet', () => {
+  const hub = createHub();
+  const t = fakeTransport();
+  hub.add(t);
+  hub.send({ id: 'before', type: 'piece' });
+  hub.detach(t);
+  hub.send({ id: 'after', type: 'piece' });
+  assert.deepEqual(
+    t.sent.map((message) => message.id),
+    ['before'],
+  );
+  assert.equal(t.closed, false, 'detach must leave the close to the caller');
+  assert.equal(hub.transports.includes(t), false);
+});
