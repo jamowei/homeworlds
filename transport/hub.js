@@ -36,8 +36,12 @@ export function createHub({ onMessage, onStatus } = {}) {
         if (onStatus) onStatus(status, transport);
       },
     });
-    transport.start?.();
+    // Register before starting: a transport can report a status synchronously
+    // from `start()` (BroadcastChannel reports `available` immediately), and a
+    // listener that reacts by sending — the app announces itself with a
+    // `hello` on `available` — must reach this transport, not just the others.
     transports.add(transport);
+    transport.start?.();
     return transport;
   }
 

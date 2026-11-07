@@ -68,3 +68,22 @@ test('the hub fans a send out to every transport', () => {
   assert.equal(a.sent.length, 1);
   assert.equal(b.sent.length, 1);
 });
+
+test('a transport is registered before it starts, so a status it emits during start can be sent', () => {
+  // The app announces itself with a `hello` when BroadcastChannel reports
+  // `available` from `start()`. If the transport were added after `start()`,
+  // that send would fan out to nobody and the peer would never be discovered.
+  const hub = createHub({
+    onStatus: (status) => {
+      if (status === 'available') hub.send({ id: 'hello', type: 'hello' });
+    },
+  });
+  const t = fakeTransport();
+  t.start = function () {
+    this.started = true;
+    this.handlers.onStatus('available');
+  };
+  hub.add(t);
+  assert.equal(t.sent.length, 1);
+  assert.equal(t.sent[0].id, 'hello');
+});
