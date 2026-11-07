@@ -87,6 +87,9 @@
 .btn:hover { border-color: var(--blue); }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn.danger:hover { border-color: var(--red); }
+/* Fully red destructive action (the hovering `.danger` above only hints at it). */
+.btn.danger-solid { color: var(--red); border-color: var(--red); }
+.btn.danger-solid:hover { border-color: var(--red); }
 .btn.primary { border-color: var(--green); color: var(--green); }
 
 .linklike {
@@ -261,6 +264,25 @@
   border-radius: 12px;
   padding: 1rem 1.1rem;
   margin-bottom: 0.75rem;
+  /* Fold closed once a peer connects (app.js toggles `.is-folded`). The
+     measured height is pinned in --handshake-max so the collapse animates from
+     the real size instead of snapping from an over-large max-height. */
+  overflow: hidden;
+  max-height: var(--handshake-max, none);
+  transition: max-height 0.26s ease, opacity 0.26s ease, padding 0.26s ease,
+    border-width 0.26s ease, margin-bottom 0.26s ease;
+}
+.handshake.is-folded {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  margin-bottom: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .handshake { transition: none; }
 }
 .handshake > summary,
 .fallback > summary {

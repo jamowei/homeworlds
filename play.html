@@ -78,13 +78,13 @@
   </p>
 
   <div class="play-toolbar" id="toolbar">
+    <button type="button" class="btn" id="controls-open" aria-haspopup="dialog">Steuerung</button>
     <span class="status" id="status" data-state="offline">Nicht verbunden</span>
     <span class="zoom" id="zoom-level">Zoom 100%</span>
     <span class="spacer"></span>
-    <button type="button" class="btn" id="controls-open" aria-haspopup="dialog">Steuerung</button>
     <button type="button" class="btn" id="reconnect">Verbindung erneuern</button>
-    <button type="button" class="btn" id="leave-game">Spiel verlassen</button>
     <button type="button" class="btn danger" id="reset">Zurücksetzen</button>
+    <button type="button" class="btn danger-solid" id="leave-game">Spiel verlassen</button>
   </div>
 
   <details class="handshake" id="handshake" hidden>
@@ -96,11 +96,9 @@
       <input id="handshake-link" type="text" readonly>
       <button type="button" class="btn" id="copy-link">Kopieren</button>
     </div>
-    <p class="note">Falls der Link zu lang ist, hier der Code zum Einfügen:</p>
-    <textarea id="handshake-blob" rows="3" readonly></textarea>
     <div id="reply-box" hidden>
       <p class="note">Füge die Antwort deines Gegenübers ein:</p>
-      <textarea id="reply-input" rows="3" placeholder="Antwort-Code"></textarea>
+      <textarea id="reply-input" rows="3" placeholder="Antwort-Link"></textarea>
       <button type="button" class="btn primary" id="accept-reply">Übernehmen</button>
     </div>
     <p class="handshake-error" id="handshake-error" hidden></p>

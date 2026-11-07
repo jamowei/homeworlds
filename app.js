@@ -24,7 +24,7 @@ import { createHub } from './transport/hub.js';
 import { createBroadcastTransport } from './transport/broadcast.js';
 import { createPeerRegistry } from './transport/peers.js';
 import { createWebRtcTransport, isWebRtcSupported, DEFAULT_ICE_SERVERS, fetchMeteredIceServers, mergeIceServers } from './transport/webrtc.js';
-import { encodeFragment, decodeFragment, encodePaste, decodePaste } from './signalling/codec.js';
+import { encodeFragment, decodeFragment, decodePaste } from './signalling/codec.js';
 import { exportDocument, importDocument } from './core/io.js';
 import { TURN_CONFIG } from './turn.config.js';
 
@@ -34,6 +34,10 @@ const NAME_KEY = 'hw-name';
 // create/join gate is shown on load, so "Spiel verlassen" can bring it back
 // without the player clearing storage by hand.
 const ACTIVE_KEY = 'hw-active';
+// How long the invite panel takes to fold closed. Kept in step with the
+// `.handshake` transition in play.css.
+const HANDSHAKE_FOLD_MS = 260;
+let handshakeHideTimer = null;
 
 // A per-session peer id: it is the last-write-wins tiebreak between two peers.
 const PEER_ID = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)).slice(0, 12);
@@ -194,14 +198,16 @@ useBroadcast(gameId);
 
 function aggregateStatus() {
   const active = [...transportStatus.values()].filter((v) => v !== 'available');
+  // A registered peer is the strongest signal: same-browser tabs sync over
+  // BroadcastChannel, which never reports a `connected` transport, so a
+  // pending WebRTC offer must not hide the fact that we are already talking to
+  // the opponent.
+  if (peers.size() > 1) return 'connected';
   if (active.includes('connected')) return 'connected';
   if (active.includes('failed')) return 'failed';
   if (active.includes('waiting')) return 'waiting';
   if (active.some((v) => v === 'disconnected' || v === 'closed')) return 'disconnected';
   if (active.length > 0 && active.every((v) => v === 'unavailable')) return 'unavailable';
-  // Same-browser tabs talk over BroadcastChannel, which cannot report a peer by
-  // itself — a `hello` from another player is what makes us connected.
-  if (peers.size() > 1) return 'connected';
   if (active.length > 0) return 'disconnected';
   return 'offline';
 }
@@ -265,6 +271,10 @@ function receiveRemote(message) {
       return;
     }
     if (message.name) opponentName = message.name;
+    // A registered peer means the handshake is done. WebRTC also fires a
+    // `connected` status, but BroadcastChannel connects same-browser tabs
+    // without one, so fold the invite panel here for both transports.
+    hideHandshake();
     updateStatus();
     // Answer once so the other side also learns our name, without looping.
     hub.send({ type: 'hello-ack', id: messageId(), by: PEER_ID, name: ownName() });
@@ -276,6 +286,7 @@ function receiveRemote(message) {
   if (message.type === 'hello-ack') {
     if (message.by && message.by !== PEER_ID && (peers.has(message.by) || peers.register(message.by))) {
       if (message.name) opponentName = message.name;
+      hideHandshake();
       updateStatus();
     }
     return;
@@ -392,19 +403,48 @@ function showControls(show) {
 function showHandshake(config) {
   const panel = $('handshake');
   if (!panel) return;
+  // Re-opening during a fold must expand again rather than stay half-collapsed.
+  clearTimeout(handshakeHideTimer);
+  panel.classList.remove('is-folded');
+  panel.style.removeProperty('--handshake-max');
   panel.hidden = false;
   if ('open' in panel) panel.open = true;
   $('handshake-title').textContent = config.title;
   $('handshake-help').textContent = config.help || '';
   $('handshake-link').value = config.link || '';
-  $('handshake-blob').value = config.blob || '';
   const replyBox = $('reply-box');
   if (replyBox) replyBox.hidden = !config.reply;
   showError('handshake-error', '');
 }
+// Fold the invite panel closed, then take it out of the layout and clear its
+// inputs. Clearing here also covers "Spiel verlassen": hiding the panel alone
+// kept the pasted reply in the DOM, so the next handshake offered a stale
+// answer. The inputs are cleared only once the fold has finished, so the link
+// does not blank out mid-animation.
 function hideHandshake() {
   const panel = $('handshake');
-  if (panel) panel.hidden = true;
+  if (panel && !panel.hidden && !panel.classList.contains('is-folded')) {
+    // Pin the exact current height first, so the transition runs from the real
+    // size instead of snapping from an over-large default max-height.
+    panel.style.setProperty('--handshake-max', `${panel.offsetHeight}px`);
+    void panel.offsetHeight;
+    panel.classList.add('is-folded');
+    clearTimeout(handshakeHideTimer);
+    handshakeHideTimer = setTimeout(() => resetHandshake(panel), HANDSHAKE_FOLD_MS);
+  } else if (panel && panel.hidden) {
+    resetHandshake(panel);
+  }
+}
+function resetHandshake(panel) {
+  if (panel) {
+    panel.hidden = true;
+    panel.classList.remove('is-folded');
+    panel.style.removeProperty('--handshake-max');
+  }
+  const reply = $('reply-input');
+  if (reply) reply.value = '';
+  const link = $('handshake-link');
+  if (link) link.value = '';
 }
 function showError(id, message) {
   const el = $(id);
@@ -529,7 +569,6 @@ async function reconnect() {
       title: 'Verbindung erneuern',
       help: 'Dieselbe Partie: Sende diesen neuen Einladungs-Link und füge danach die Antwort wieder unten ein.',
       link: await linkFor(offer),
-      blob: await encodePaste(offer),
       reply: true,
     });
   } catch (error) {
@@ -561,7 +600,6 @@ async function createGame() {
       title: 'Einladung teilen',
       help: 'Sende diesen Link an deine Mitspielerin oder deinen Mitspieler. Sobald du die Antwort erhältst, füge sie unten ein.',
       link: await linkFor(offer),
-      blob: await encodePaste(offer),
       reply: true,
     });
   } catch (error) {
@@ -591,7 +629,6 @@ async function joinAsGuest(offerBlob) {
       title: 'Antwort senden',
       help: 'Schicke diesen Antwort-Link zurück an den Gastgeber. Danach seid ihr verbunden.',
       link: await linkFor(answer),
-      blob: await encodePaste(answer),
       reply: false,
     });
   } catch (error) {
