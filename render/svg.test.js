@@ -4,10 +4,31 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { clampCamera } from './svg.js';
+import { clampCamera, mirrorY } from './svg.js';
 import { WORLD, MIN_ZOOM, MAX_ZOOM } from '../core/state.js';
 
 const view = { w: 1000, h: 600 };
+
+test('the host sees the play field unmirrored', () => {
+  assert.equal(mirrorY(200, 'host'), 200);
+  assert.equal(mirrorY(0, 'host'), 0);
+});
+
+test('the guest sees the play field mirrored top-to-bottom', () => {
+  assert.equal(mirrorY(200, 'guest'), WORLD.height - 200);
+  assert.equal(mirrorY(0, 'guest'), WORLD.height);
+  assert.equal(mirrorY(WORLD.height, 'guest'), 0);
+});
+
+test('the mirror is its own inverse, so world ↔ view round-trips', () => {
+  const y = 437;
+  assert.equal(mirrorY(mirrorY(y, 'guest'), 'guest'), y);
+  assert.equal(mirrorY(mirrorY(y, 'host'), 'host'), y);
+});
+
+test('the middle of the field is fixed under the mirror', () => {
+  assert.equal(mirrorY(WORLD.height / 2, 'guest'), WORLD.height / 2);
+});
 
 test('a camera inside the world is left where it is', () => {
   const clamped = clampCamera({ x: WORLD.width / 2, y: WORLD.height / 2, zoom: 1 }, view, WORLD);

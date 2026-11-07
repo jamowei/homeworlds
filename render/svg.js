@@ -36,6 +36,15 @@ export function pieceSize(size) {
   return PIECE_SIZES[size] || PIECE_SIZES[3];
 }
 
+// The play field is drawn mirrored top-to-bottom for one role, so each player
+// sees their own pieces at the bottom and the opponent's at the top: a piece the
+// host drops low (large y) shows up high for the guest. The host is the
+// identity; the guest is flipped about the field's middle. The map is an
+// involution, so the same call converts world y → view y and view y → world y.
+export function mirrorY(y, localRole) {
+  return localRole === 'guest' ? WORLD.height - y : y;
+}
+
 const COLOR_VAR = {
   yellow: 'var(--yellow)',
   green: 'var(--green)',
@@ -138,6 +147,11 @@ export function createRenderer(boardSvg, options = {}) {
   // The local player's role, read lazily on every paint: a ship's direction is
   // derived from its owner and this role, so it must be current when rendering.
   const getLocalRole = typeof options.getLocalRole === 'function' ? options.getLocalRole : () => 'host';
+  // Vertical mirror of the play field for the local viewer (see `mirrorY`).
+  // Read lazily, like the role, so a create/join repaint flips the field at
+  // once. `toWorldY` is the same involution, named for the other direction.
+  const toViewY = (y) => mirrorY(y, getLocalRole());
+  const toWorldY = toViewY;
   const bankSvg = options.bankSvg || null;
   let board = null;
   let draggingId = null;
@@ -208,10 +222,20 @@ export function createRenderer(boardSvg, options = {}) {
   function currentCamera() {
     return board ? board.camera : { x: playfieldWidth() / 2, y: WORLD.height / 2, zoom: 1 };
   }
+  // The stored camera is in world coordinates and shared; the board is drawn in
+  // the local *view*, which is the world mirrored for one role. These convert
+  // between the two so sync and persistence keep using world coordinates.
+  function viewCamera() {
+    const cam = currentCamera();
+    return { x: cam.x, y: toViewY(cam.y), zoom: cam.zoom };
+  }
+  function fromViewCamera(cam) {
+    return { x: cam.x, y: toWorldY(cam.y), zoom: cam.zoom };
+  }
 
   function updateViewBox() {
     if (!board) return;
-    const cam = board.camera;
+    const cam = viewCamera();
     const w = view.w / cam.zoom;
     const h = view.h / cam.zoom;
     const x = cam.x - w / 2;
@@ -272,7 +296,8 @@ export function createRenderer(boardSvg, options = {}) {
       return viewBoxToWorld(bankViewBox(), rect, clientX - rect.left, clientY - rect.top);
     }
     const rect = boardSvg.getBoundingClientRect();
-    return screenToWorld(currentCamera(), view, clientX - rect.left, clientY - rect.top);
+    const v = screenToWorld(viewCamera(), view, clientX - rect.left, clientY - rect.top);
+    return { x: v.x, y: toWorldY(v.y) };
   }
 
   // The client position a piece is drawn at in a given panel. Used to keep the
@@ -284,7 +309,7 @@ export function createRenderer(boardSvg, options = {}) {
       return { x: rect.left + p.x, y: rect.top + p.y };
     }
     const rect = boardSvg.getBoundingClientRect();
-    const p = worldToScreen(currentCamera(), view, piece.x, piece.y);
+    const p = worldToScreen(viewCamera(), view, piece.x, toViewY(piece.y));
     return { x: rect.left + p.x, y: rect.top + p.y };
   }
 
@@ -396,15 +421,18 @@ export function createRenderer(boardSvg, options = {}) {
     emit({ type: 'cursor', cursor: { x: world.x, y: world.y } });
   }
 
-  function renderPiece(piece) {
+  // `mirror` draws the piece in the local play view (the board); the Bank panel
+  // is a fixed reference, so its copy is never mirrored.
+  function renderPiece(piece, mirror = false) {
     const size = pieceSize(piece.size);
     // Direction is per viewer: a ship points up for its owner and down for the
     // other player. Never read a stored rotation — none is kept.
     const rotation = pieceFacing(piece, getLocalRole());
+    const y = mirror ? toViewY(piece.y) : piece.y;
     const group = el('g', {
       class: `piece piece-${piece.kind} color-${piece.color}`,
       'data-id': piece.id,
-      transform: `translate(${piece.x} ${piece.y}) rotate(${rotation})`,
+      transform: `translate(${piece.x} ${y}) rotate(${rotation})`,
     });
 
     if (piece.kind === 'star') {
@@ -451,11 +479,11 @@ export function createRenderer(boardSvg, options = {}) {
     // The piece being dragged is drawn last so it sits above the others.
     all.sort((a, b) => (a.id === draggingId ? 1 : 0) - (b.id === draggingId ? 1 : 0));
     for (const piece of all) {
-      const node = renderPiece(piece);
+      const node = renderPiece(piece, true);
       if (piece.id === draggingId) node.classList.add('dragging');
       boardPieces.appendChild(node);
       if (bankSvg) {
-        const bankNode = renderPiece(piece);
+        const bankNode = renderPiece(piece, false);
         if (piece.id === draggingId) bankNode.classList.add('dragging');
         bankPieces.appendChild(bankNode);
       }
@@ -475,10 +503,11 @@ export function createRenderer(boardSvg, options = {}) {
     }
   }
 
-  function presenceMarker(cursor, name) {
+  function presenceMarker(cursor, name, mirror = false) {
+    const y = mirror ? toViewY(cursor.y) : cursor.y;
     const group = el('g', {
       class: 'remote-cursor',
-      transform: `translate(${cursor.x} ${cursor.y})`,
+      transform: `translate(${cursor.x} ${y})`,
     });
     group.appendChild(
       el('path', {
@@ -499,8 +528,8 @@ export function createRenderer(boardSvg, options = {}) {
     bankPresence.replaceChildren();
     const { cursor, name } = remotePresence;
     if (!cursor) return;
-    boardPresence.appendChild(presenceMarker(cursor, name));
-    if (bankSvg) bankPresence.appendChild(presenceMarker(cursor, name));
+    boardPresence.appendChild(presenceMarker(cursor, name, true));
+    if (bankSvg) bankPresence.appendChild(presenceMarker(cursor, name, false));
   }
 
   // Update what we know about the opponent. Each key is optional; `cursor` is
@@ -584,7 +613,7 @@ export function createRenderer(boardSvg, options = {}) {
       const [a, b] = [...activePointers.values()];
       pinch = {
         distance: Math.hypot(a.x - b.x, a.y - b.y),
-        camera: { ...currentCamera() },
+        camera: { ...viewCamera() },
         mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
       };
       pan = null;
@@ -604,7 +633,7 @@ export function createRenderer(boardSvg, options = {}) {
     }
     // Only the board background pans; the Bank panel is fixed.
     if (event.currentTarget !== boardSvg) return;
-    pan = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: { ...currentCamera() } };
+    pan = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: { ...viewCamera() } };
     boardSvg.setPointerCapture?.(event.pointerId);
     boardSvg.style.cursor = 'grabbing';
   }
@@ -623,7 +652,7 @@ export function createRenderer(boardSvg, options = {}) {
         const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
         const zoom = pinch.camera.zoom * (distance / pinch.distance);
         const anchor = { px: pinch.mid.x - rect.left, py: pinch.mid.y - rect.top };
-        emitCamera(zoomAround(pinch.camera, view, anchor.px, anchor.py, zoom));
+        emitCamera(fromViewCamera(zoomAround(pinch.camera, view, anchor.px, anchor.py, zoom)));
       }
       return;
     }
@@ -646,7 +675,7 @@ export function createRenderer(boardSvg, options = {}) {
     if (pan && event.pointerId === pan.pointerId) {
       const dx = (event.clientX - pan.x) / pan.camera.zoom;
       const dy = (event.clientY - pan.y) / pan.camera.zoom;
-      emitCamera({ x: pan.camera.x - dx, y: pan.camera.y - dy, zoom: pan.camera.zoom });
+      emitCamera(fromViewCamera({ x: pan.camera.x - dx, y: pan.camera.y - dy, zoom: pan.camera.zoom }));
     }
   }
 
@@ -714,10 +743,10 @@ export function createRenderer(boardSvg, options = {}) {
 
   function onWheel(event) {
     event.preventDefault();
-    const cam = currentCamera();
+    const cam = viewCamera();
     const { px, py } = pointerPx(event);
     const factor = Math.exp(-event.deltaY * 0.0015);
-    emitCamera(zoomAround(cam, view, px, py, cam.zoom * factor));
+    emitCamera(fromViewCamera(zoomAround(cam, view, px, py, cam.zoom * factor)));
   }
 
   function attach(target) {
@@ -741,8 +770,8 @@ export function createRenderer(boardSvg, options = {}) {
 
   // +/− buttons and keyboard.
   function zoomBy(factor) {
-    const cam = currentCamera();
-    emitCamera({ x: cam.x, y: cam.y, zoom: cam.zoom * factor });
+    const cam = viewCamera();
+    emitCamera(fromViewCamera({ x: cam.x, y: cam.y, zoom: cam.zoom * factor }));
   }
 
   // Fit the whole play field into the viewport, centred on the field centre,
