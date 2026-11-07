@@ -38,6 +38,23 @@ API-Key eintragen (Details stehen als Kommentar in der Datei). Das
 TURN-Passwort wird zur Laufzeit geladen und steht nicht im Repo. Bleibt die
 Datei leer, läuft alles wie bisher rein über STUN.
 
+## Verbindung, STUN und Diagnose
+
+- STUN wird bei jedem Verbindungsaufbau während der ICE-Sammlung abgefragt. Es
+  ermittelt die öffentliche Adresse der Gegenstelle; klappt damit eine direkte
+  Verbindung, fließt der Datenverkehr peer-to-peer. Nur wenn kein direktes
+  Kandidatenpaar funktioniert, wird das konfigurierte TURN-Relay genutzt.
+- Die Browser-Konsole (F12) zeigt unter `[Homeworlds WebRTC]`, welche
+  ICE-Server konfiguriert sind, welche Kandidatentypen (`host`, `srflx`,
+  `relay`) gesammelt wurden, ob STUN/TURN Fehler meldet und ob die Verbindung
+  am Ende direkt oder über das Relay läuft. Nach dem Verbinden steht das auch
+  in der Statusleiste („· direkt“ bzw. „· über Relay“).
+- Im Einladungsfenster gibt es bei einem Fehler „Diagnose kopieren“; die
+  Zwischenablage enthält dann einen JSON-Bericht ohne Zugangsdaten.
+- Ein Antwort-Link hat kein festes Ablaufdatum. Er funktioniert aber nur,
+  solange der Tab mit der erzeugten Einladung offen bleibt; nach „Übernehmen“
+  wartet die App bis zu 25 Sekunden auf die Verbindung.
+
 ## Credits
 
 **Homeworlds** ist ein echtes Brettspiel von [Looney Labs][store]. Es ist ein

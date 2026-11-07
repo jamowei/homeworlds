@@ -53,15 +53,45 @@ const store = createStore();
 //
 // Public STUN servers connect most peers directly. When a Metered TURN relay is
 // configured in `turn.config.js`, its credential-scoped API key fetches a full
-// ICE array at load; the fetch is awaited just before the first peer connection,
-// and any failure falls back to STUN only. Trying STUN first keeps the relay
-// (and its bandwidth quota) for the connections that actually need it.
-const iceServersReady = (async () => {
-  const turn = await fetchMeteredIceServers(TURN_CONFIG || {});
-  return turn && turn.length ? mergeIceServers(DEFAULT_ICE_SERVERS, turn) : DEFAULT_ICE_SERVERS;
-})();
+// ICE array; the fetch happens just before a peer connection is created (and is
+// cached briefly) so a long-open tab never uses stale relay credentials, and
+// any failure falls back to STUN only. The fallback is logged: a silent switch
+// to STUN is exactly what makes a symmetric-NAT failure hard to diagnose.
+const ICE_CACHE_MS = 10 * 60 * 1000;
+let cachedIceServers = null;
+let cachedIceServersAt = 0;
+
 async function getIceServers() {
-  return iceServersReady;
+  if (cachedIceServers && Date.now() - cachedIceServersAt < ICE_CACHE_MS) {
+    return cachedIceServers;
+  }
+
+  const turn = await fetchMeteredIceServers({
+    ...(TURN_CONFIG || {}),
+    onError: (reason) =>
+      console.warn(
+        '[Homeworlds WebRTC] TURN-Zugangsdaten konnten nicht geladen werden – es wird nur STUN verwendet.',
+        reason,
+      ),
+  });
+
+  cachedIceServers = turn && turn.length ? mergeIceServers(DEFAULT_ICE_SERVERS, turn) : DEFAULT_ICE_SERVERS;
+  cachedIceServersAt = Date.now();
+
+  const turnCount = cachedIceServers.filter((server) => /^turns?:/iu.test(server.urls)).length;
+  const turnConfigured = Boolean((TURN_CONFIG || {}).domain && (TURN_CONFIG || {}).apiKey);
+  console.info('[Homeworlds WebRTC] ICE-Konfiguration', {
+    stun: cachedIceServers.length - turnCount,
+    turn: turnCount,
+    turnConfigured,
+  });
+  if (turnConfigured && turnCount === 0) {
+    console.warn(
+      '[Homeworlds WebRTC] TURN ist konfiguriert, aber es kamen keine TURN-Server zurück. ' +
+        'Verbindungen hinter einem symmetrischen NAT werden wahrscheinlich scheitern.',
+    );
+  }
+  return cachedIceServers;
 }
 
 // --- Identity -----------------------------------------------------------
@@ -165,6 +195,9 @@ function setDocument(next) {
 // --- Sync ---------------------------------------------------------------
 
 let opponentName = null;
+// How the peer connection runs: "direct" (host/srflx) or "relay" (TURN). Shown
+// as a suffix in the status once WebRTC has selected a candidate pair.
+let connectionPath = null;
 const transportStatus = new Map();
 let peers = createPeerRegistry({ self: PEER_ID, limit: 2 });
 const rejectedPeers = new Set();
@@ -182,7 +215,9 @@ const hub = createHub({
     if (status === 'failed') {
       showError(
         'handshake-error',
-        'Die Verbindung konnte nicht hergestellt werden. Prüfe die Netzwerke und versuche es über „Verbindung erneuern“ noch einmal.',
+        'Die Verbindung konnte nicht hergestellt werden. Das Netzwerk blockiert vermutlich die direkte ' +
+          'Verbindung (NAT/Firewall). Details stehen in der Browser-Konsole unter „[Homeworlds WebRTC]“; ' +
+          'mit „Diagnose kopieren“ kannst du sie weitergeben. Klicke „Verbindung erneuern“ für einen neuen Versuch.',
       );
     }
   },
@@ -225,6 +260,9 @@ function updateStatus() {
     offline: 'Nicht verbunden',
   }[state];
   if (state === 'connected' && opponentName) text += ` mit ${opponentName}`;
+  if (state === 'connected' && connectionPath) {
+    text += connectionPath.path === 'relay' ? ' · über Relay' : ' · direkt';
+  }
   statusEl.textContent = text;
 }
 
@@ -236,8 +274,22 @@ function updateZoom() {
   zoomEl.textContent = `Zoom ${Math.round((Number.isFinite(zoom) ? zoom : 1) * 100)}%`;
 }
 
+// `getStats()` has the selected candidate pair a moment after `connected`, so
+// poll a few times instead of reading it once too early. The status then says
+// "· direkt" or "· über Relay", which answers "was STUN enough?" without DevTools.
+function recordConnectionPath(transport, attempt = 0) {
+  if (!transport || transport.kind !== 'webrtc') return;
+  if (transport.getDiagnostics?.().path) {
+    connectionPath = transport.getDiagnostics().path;
+    updateStatus();
+    return;
+  }
+  if (attempt < 5) setTimeout(() => recordConnectionPath(transport, attempt + 1), 400);
+}
+
 function onConnected(transport) {
   hideHandshake();
+  recordConnectionPath(transport);
   // One hello + one document sync per connection. A peer that hears our hello
   // answers with a sync of its own, so both boards always cross — this matters
   // for BroadcastChannel, whose `available` fires before any peer exists, so
@@ -445,12 +497,18 @@ function resetHandshake(panel) {
   if (reply) reply.value = '';
   const link = $('handshake-link');
   if (link) link.value = '';
+  showError('handshake-error', '');
 }
 function showError(id, message) {
   const el = $(id);
   if (!el) return;
   el.textContent = message || '';
   el.hidden = !message;
+  // The diagnostic copy button only makes sense next to a handshake failure.
+  if (id === 'handshake-error') {
+    const copy = $('copy-diagnostics');
+    if (copy) copy.hidden = !message;
+  }
 }
 
 // --- Busy / loading indicator -------------------------------------------
@@ -471,6 +529,22 @@ function setBusy(busy, text) {
   else document.body.removeAttribute('aria-busy');
 }
 
+// Give the browser one frame to paint the spinner before awaiting something
+// slow. The timer is a fallback for background tabs, where requestAnimationFrame
+// is throttled or paused.
+function nextPaint() {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(done);
+    setTimeout(done, 50);
+  });
+}
+
 // Remember whether the player is in a game (drives whether the gate shows on
 // the next load). "Spiel verlassen" clears it; create/join set it.
 function setActive(active) {
@@ -485,6 +559,7 @@ function newGameId() {
 // it removes it from the hub, so a stale channel can never deliver messages
 // into the fresh connection.
 function teardownWebRtc() {
+  connectionPath = null;
   if (!webrtc) return;
   const old = webrtc;
   webrtc = null;
@@ -497,9 +572,29 @@ function attachWebRtc(transport) {
   webrtc = transport;
   hub.add(transport);
   // Errors use the same handler mechanism as messages/status (setHandlers).
-  transport.setHandlers({ onError: (event) => console.warn('WebRTC-Fehler', event) });
+  transport.setHandlers({ onError: (event) => console.warn('[Homeworlds WebRTC] Datenkanal-Fehler', event) });
   return transport;
 }
+
+// A support-friendly snapshot. The transport logs the same object to the
+// console on failure; this makes it available to the "Diagnose kopieren"
+// button without asking the player to dig through DevTools.
+globalThis.__hwDiagnostics = () => {
+  try {
+    return {
+      time: new Date().toISOString(),
+      page: location.origin + location.pathname,
+      gameId,
+      localRole,
+      opponent: opponentName || null,
+      status: aggregateStatus(),
+      userAgent: navigator.userAgent,
+      transport: webrtc?.getDiagnostics?.() || null,
+    };
+  } catch (error) {
+    return { time: new Date().toISOString(), error: String(error) };
+  }
+};
 
 // --- Leave game ---------------------------------------------------------
 //
@@ -654,12 +749,24 @@ async function acceptReplyText(text) {
     showError('handshake-error', 'Keine offene Einladung. Erstelle zuerst ein neues Spiel.');
     return;
   }
-  setBusy(true, 'Antwort wird übernommen …');
+  showError('handshake-error', '');
+  setBusy(true, 'Verbindung wird hergestellt …');
+  // Let the browser paint the spinner before the (possibly multi-second) wait.
+  await nextPaint();
   try {
     await webrtc.acceptAnswer(blob);
+    // Keep the spinner up until ICE/DTLS actually connected (or failed with a
+    // readable reason). Without this, the panel looked frozen while the
+    // connection attempt ran in the background.
+    await webrtc.waitForConnection?.({ timeoutMs: 25000 });
     showError('handshake-error', '');
   } catch (error) {
     showError('handshake-error', error?.message || 'Antwort konnte nicht übernommen werden.');
+    // Keep the full object in the console as well, for a copyable diagnosis.
+    console.error('[Homeworlds] Verbindungsaufbau fehlgeschlagen', {
+      error: error?.message || String(error),
+      diagnostics: globalThis.__hwDiagnostics?.(),
+    });
   } finally {
     setBusy(false);
   }
@@ -801,6 +908,23 @@ $('reconnect')?.addEventListener('click', () => reconnect());
 $('leave-game')?.addEventListener('click', () => leaveGame());
 $('join-game')?.addEventListener('click', () => joinFromText($('join-input')?.value));
 $('accept-reply')?.addEventListener('click', () => acceptReplyText($('reply-input')?.value));
+$('copy-diagnostics')?.addEventListener('click', async () => {
+  const text = JSON.stringify(globalThis.__hwDiagnostics?.() || {}, null, 2);
+  // Always print it, so it can be selected by hand if the clipboard is blocked.
+  console.info('[Homeworlds] Diagnose', text);
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = $('copy-diagnostics');
+    if (btn) {
+      btn.textContent = 'Diagnose kopiert!';
+      setTimeout(() => {
+        btn.textContent = 'Diagnose kopieren';
+      }, 1500);
+    }
+  } catch {
+    // The console line above is the fallback.
+  }
+});
 $('gate-skip')?.addEventListener('click', () => {
   setActive(true);
   showGate(false);

@@ -61,6 +61,7 @@
       <div><dt>Verbinden</dt><dd>Einladungs-Link teilen; die Antwort des Gegenübers einfügen.</dd></div>
       <div><dt>Ohne Verbindung</dt><dd>Board als JSON exportieren und per Chat austauschen.</dd></div>
       <div><dt>Spiel verlassen</dt><dd>Beendet die Partie auf diesem Gerät und zeigt wieder die Auswahl zum Erstellen oder Beitreten.</dd></div>
+      <div><dt>Diagnose</dt><dd>Bei Verbindungsproblemen zeigt die Browser-Konsole (F12) unter „[Homeworlds WebRTC]“ Details; im Einladungsfenster gibt es „Diagnose kopieren“.</dd></div>
     </dl>
   </div>
 </div>
@@ -102,6 +103,7 @@
       <button type="button" class="btn primary" id="accept-reply">Übernehmen</button>
     </div>
     <p class="handshake-error" id="handshake-error" hidden></p>
+    <button type="button" class="btn" id="copy-diagnostics" hidden>Diagnose kopieren</button>
   </details>
 
   <div class="table-layout">

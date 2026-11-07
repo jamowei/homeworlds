@@ -152,7 +152,8 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - **Validation:** incoming messages are validated (known id, valid colour/size/kind/owner, finite coordinates) before application; invalid messages are ignored.
 
 ### Transport & signalling
-- **True serverless P2P.** WebRTC DataChannels for cross-device; a **two-way URL exchange**: host creates an offer link, guest opens it and produces a reply link, host opens the reply to connect. Public **STUN by default**; an **optional TURN relay** (Metered) is fetched at load from a credential-scoped API key in `turn.config.js`, so symmetric NATs can still connect. No application server.
+- **True serverless P2P.** WebRTC DataChannels for cross-device; a **two-way URL exchange**: host creates an offer link, guest opens it and produces a reply link, host opens the reply to connect. Public **STUN by default**; an **optional TURN relay** (Metered) is fetched just before a peer connection is built (briefly cached) from a credential-scoped API key in `turn.config.js`, so symmetric NATs can still connect. No application server.
+- **Connection feedback & diagnostics.** Creating an offer/answer and accepting a reply show a spinner for the whole operation, not just the first tick. A failed attempt reports what happened, logs `[Homeworlds WebRTC]` details (ICE servers, candidates by type, STUN/TURN errors, connection states, selected direct/relay path) to the browser console, and offers a "Diagnose kopieren" button.
 - The blob (compressed SDP + `gameId` + host/guest role) travels in the **URL fragment** (`#…`), never to any server.
 - **Paste-box fallback** is always available for blobs too long for a URL.
 - **BroadcastChannel always on** for same-browser tabs; deduped against WebRTC by message id.
@@ -211,7 +212,8 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 
 ## Further Notes
 
-- **NAT caveat:** a direct P2P connection uses STUN only by default, so on strict or symmetric NATs WebRTC may fail. Configuring a TURN relay (Metered) in `turn.config.js` fixes those cases; without it, the JSON export/import fallback is the escape hatch, and same-device tabs always work.
+- **NAT caveat:** a direct P2P connection uses STUN only by default, so on strict or symmetric NATs WebRTC may fail. Configuring a TURN relay (Metered) in `turn.config.js` fixes those cases; without it, the JSON export/import fallback is the escape hatch, and same-device tabs always work. STUN is always tried during ICE gathering; the relay is only the fallback path when no direct candidate pair works.
+- **No fixed reply deadline:** a reply link has no hard-coded expiry, but it only works while the host tab that created the offer stays open (the SDP and peer connection live in memory). The browser refreshes TURN allocations while that tab is open. After "Übernehmen", the app waits up to 25 s for ICE/DTLS before reporting a timeout.
 - **HTTPS caveat:** WebRTC requires a secure context; the app must be served over HTTPS (GitHub Pages), not opened as `file://`.
 - **URL-length caveat:** large SDP blobs can exceed practical URL lengths in some chat apps; hence the always-available paste box and JSON export.
 - **Language/theme:** German UI and existing dark/light palette are shared with `index.html`/`guide.html`, but `play.html` keeps its own script/styles to avoid disturbing the reference pages.
