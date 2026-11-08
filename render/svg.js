@@ -40,6 +40,13 @@ export const PIECE_SIZES = Object.freeze({ 1: 56, 2: 68, 3: 80 });
 // are ~116 apart and the radii sum to 112.
 export const PIECE_HIT_RADIUS = 0.7;
 
+// Size pips, as fractions of the piece size: radius and the vertical gap
+// between centres. The diameter (0.15x) stays below the gap (0.17x), so the
+// three dots never touch, while the bigger radius keeps them readable when the
+// board is zoomed out.
+const PIP_RADIUS_RATIO = 0.075;
+const PIP_GAP_RATIO = 0.17;
+
 export function pieceSize(size) {
   return PIECE_SIZES[size] || PIECE_SIZES[3];
 }
@@ -488,10 +495,10 @@ export function createRenderer(boardSvg, options = {}) {
     // Size pips (1/2/3 dots), centred on the piece for visibility, in an
     // unrotated sub-group so they stay upright whichever way the piece points.
     const pips = el('g', { class: 'piece-pips', transform: `rotate(${-rotation})` });
-    const gap = size * 0.16;
+    const gap = size * PIP_GAP_RATIO;
     const startY = -((piece.size - 1) * gap) / 2;
     for (let i = 0; i < piece.size; i++) {
-      pips.appendChild(el('circle', { cx: 0, cy: startY + i * gap, r: size * 0.055, class: 'piece-pip' }));
+      pips.appendChild(el('circle', { cx: 0, cy: startY + i * gap, r: size * PIP_RADIUS_RATIO, class: 'piece-pip' }));
     }
     group.appendChild(pips);
 
