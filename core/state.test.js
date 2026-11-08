@@ -10,6 +10,7 @@ import {
   LEGACY_WORLD_WIDTH,
   MIN_ZOOM,
   MAX_ZOOM,
+  INITIAL_ZOOM,
   createDocument,
   pieceId,
   bankLayout,
@@ -105,7 +106,11 @@ test('the document carries a game id and a camera', () => {
   const doc = createDocument('game-42');
   assert.equal(doc.gameId, 'game-42');
   assert.ok(doc.camera);
-  assert.equal(doc.camera.zoom, 1);
+  assert.equal(doc.camera.zoom, INITIAL_ZOOM);
+});
+
+test('the initial zoom is 40%', () => {
+  assert.equal(INITIAL_ZOOM, 0.4);
 });
 
 test('zoom is clamped to roughly 25%–100%', () => {

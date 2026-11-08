@@ -80,6 +80,7 @@ export const LEGACY_BANK = Object.freeze({
 
 export const MIN_ZOOM = 0.25;
 export const MAX_ZOOM = 1;
+export const INITIAL_ZOOM = 0.4;
 
 const HALF_EXTENT = 30; // clamping margin for a piece centre
 
@@ -267,7 +268,7 @@ export function createDocument(gameId = 'local', meta = {}) {
     camera: {
       x: playfieldWidth() / 2,
       y: WORLD.height / 2,
-      zoom: 1,
+      zoom: INITIAL_ZOOM,
       version: 0,
       by: '',
     },

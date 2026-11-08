@@ -20,6 +20,7 @@ import {
   SIZES,
   clamp,
   clampZoom,
+  INITIAL_ZOOM,
   MIN_ZOOM,
   MAX_ZOOM,
   pieceFacing,
@@ -220,7 +221,9 @@ export function createRenderer(boardSvg, options = {}) {
   }
 
   function currentCamera() {
-    return board ? board.camera : { x: playfieldWidth() / 2, y: WORLD.height / 2, zoom: 1 };
+    return board
+      ? board.camera
+      : { x: playfieldWidth() / 2, y: WORLD.height / 2, zoom: INITIAL_ZOOM };
   }
   // The stored camera is in world coordinates and shared; the board is drawn in
   // the local *view*, which is the world mirrored for one role. These convert
