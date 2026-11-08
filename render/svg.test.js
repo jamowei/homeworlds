@@ -4,14 +4,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { clampCamera, mirrorY } from './svg.js';
-import { WORLD, MIN_ZOOM, MAX_ZOOM } from '../core/state.js';
+import { clampCamera, mirrorX, mirrorY } from './svg.js';
+import { WORLD, MIN_ZOOM, MAX_ZOOM, playfieldWidth } from '../core/state.js';
 
 const view = { w: 1000, h: 600 };
 
 test('the host sees the play field unmirrored', () => {
+  assert.equal(mirrorX(200, 'host'), 200);
   assert.equal(mirrorY(200, 'host'), 200);
+  assert.equal(mirrorX(0, 'host'), 0);
   assert.equal(mirrorY(0, 'host'), 0);
+});
+
+test('the guest sees the play field mirrored left-to-right', () => {
+  assert.equal(mirrorX(200, 'guest'), playfieldWidth() - 200);
+  assert.equal(mirrorX(0, 'guest'), playfieldWidth());
+  assert.equal(mirrorX(playfieldWidth(), 'guest'), 0);
 });
 
 test('the guest sees the play field mirrored top-to-bottom', () => {
@@ -20,14 +28,25 @@ test('the guest sees the play field mirrored top-to-bottom', () => {
   assert.equal(mirrorY(WORLD.height, 'guest'), 0);
 });
 
-test('the mirror is its own inverse, so world ↔ view round-trips', () => {
-  const y = 437;
-  assert.equal(mirrorY(mirrorY(y, 'guest'), 'guest'), y);
-  assert.equal(mirrorY(mirrorY(y, 'host'), 'host'), y);
+test('both mirrors are their own inverse, so world ↔ view round-trips', () => {
+  for (const role of ['host', 'guest']) {
+    assert.equal(mirrorX(mirrorX(437, role), role), 437);
+    assert.equal(mirrorY(mirrorY(437, role), role), 437);
+  }
 });
 
-test('the middle of the field is fixed under the mirror', () => {
+test('the centre of the field is fixed under the mirror', () => {
+  assert.equal(mirrorX(playfieldWidth() / 2, 'guest'), playfieldWidth() / 2);
   assert.equal(mirrorY(WORLD.height / 2, 'guest'), WORLD.height / 2);
+});
+
+test('the guest view is a 180° turn, so left becomes right', () => {
+  const left = 400;
+  const right = 900;
+  assert.ok(
+    mirrorX(left, 'guest') > mirrorX(right, 'guest'),
+    'a piece left of another for the host is to the right of it for the guest',
+  );
 });
 
 test('a camera inside the world is left where it is', () => {

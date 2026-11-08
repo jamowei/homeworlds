@@ -37,13 +37,20 @@ export function pieceSize(size) {
   return PIECE_SIZES[size] || PIECE_SIZES[3];
 }
 
-// The play field is drawn mirrored top-to-bottom for one role, so each player
-// sees their own pieces at the bottom and the opponent's at the top: a piece the
-// host drops low (large y) shows up high for the guest. The host is the
-// identity; the guest is flipped about the field's middle. The map is an
-// involution, so the same call converts world y → view y and view y → world y.
+// The play field is drawn for the guest as if they sat opposite the host: the
+// whole view is turned by 180° about the field's centre. That is a mirror on
+// both axes — top↔bottom (y) and left↔right (x) — so a piece the host drops to
+// the lower left shows up at the upper right for the guest, and each player
+// sees their own pieces at the bottom. The host is the identity. Both maps are
+// involutions, so the same call converts world → view and view → world.
 export function mirrorY(y, localRole) {
   return localRole === 'guest' ? WORLD.height - y : y;
+}
+
+// x is mirrored about the middle of the play field, not the whole world: the
+// Bank strip on the right has its own fixed, unmirrored panel.
+export function mirrorX(x, localRole) {
+  return localRole === 'guest' ? playfieldWidth() - x : x;
 }
 
 const COLOR_VAR = {
@@ -148,10 +155,13 @@ export function createRenderer(boardSvg, options = {}) {
   // The local player's role, read lazily on every paint: a ship's direction is
   // derived from its owner and this role, so it must be current when rendering.
   const getLocalRole = typeof options.getLocalRole === 'function' ? options.getLocalRole : () => 'host';
-  // Vertical mirror of the play field for the local viewer (see `mirrorY`).
-  // Read lazily, like the role, so a create/join repaint flips the field at
-  // once. `toWorldY` is the same involution, named for the other direction.
+  // 180° view of the play field for the local viewer (see `mirrorX`/`mirrorY`):
+  // a mirror on both axes. Read lazily, like the role, so a create/join repaint
+  // flips the field at once. `toWorld*` are the same involutions, named for the
+  // other direction.
+  const toViewX = (x) => mirrorX(x, getLocalRole());
   const toViewY = (y) => mirrorY(y, getLocalRole());
+  const toWorldX = toViewX;
   const toWorldY = toViewY;
   const bankSvg = options.bankSvg || null;
   let board = null;
@@ -230,10 +240,10 @@ export function createRenderer(boardSvg, options = {}) {
   // between the two so sync and persistence keep using world coordinates.
   function viewCamera() {
     const cam = currentCamera();
-    return { x: cam.x, y: toViewY(cam.y), zoom: cam.zoom };
+    return { x: toViewX(cam.x), y: toViewY(cam.y), zoom: cam.zoom };
   }
   function fromViewCamera(cam) {
-    return { x: cam.x, y: toWorldY(cam.y), zoom: cam.zoom };
+    return { x: toWorldX(cam.x), y: toWorldY(cam.y), zoom: cam.zoom };
   }
 
   function updateViewBox() {
@@ -300,7 +310,7 @@ export function createRenderer(boardSvg, options = {}) {
     }
     const rect = boardSvg.getBoundingClientRect();
     const v = screenToWorld(viewCamera(), view, clientX - rect.left, clientY - rect.top);
-    return { x: v.x, y: toWorldY(v.y) };
+    return { x: toWorldX(v.x), y: toWorldY(v.y) };
   }
 
   // The client position a piece is drawn at in a given panel. Used to keep the
@@ -312,7 +322,7 @@ export function createRenderer(boardSvg, options = {}) {
       return { x: rect.left + p.x, y: rect.top + p.y };
     }
     const rect = boardSvg.getBoundingClientRect();
-    const p = worldToScreen(viewCamera(), view, piece.x, toViewY(piece.y));
+    const p = worldToScreen(viewCamera(), view, toViewX(piece.x), toViewY(piece.y));
     return { x: rect.left + p.x, y: rect.top + p.y };
   }
 
@@ -431,11 +441,12 @@ export function createRenderer(boardSvg, options = {}) {
     // Direction is per viewer: a ship points up for its owner and down for the
     // other player. Never read a stored rotation — none is kept.
     const rotation = pieceFacing(piece, getLocalRole());
+    const x = mirror ? toViewX(piece.x) : piece.x;
     const y = mirror ? toViewY(piece.y) : piece.y;
     const group = el('g', {
       class: `piece piece-${piece.kind} color-${piece.color}`,
       'data-id': piece.id,
-      transform: `translate(${piece.x} ${y}) rotate(${rotation})`,
+      transform: `translate(${x} ${y}) rotate(${rotation})`,
     });
 
     if (piece.kind === 'star') {
@@ -507,10 +518,11 @@ export function createRenderer(boardSvg, options = {}) {
   }
 
   function presenceMarker(cursor, name, mirror = false) {
+    const x = mirror ? toViewX(cursor.x) : cursor.x;
     const y = mirror ? toViewY(cursor.y) : cursor.y;
     const group = el('g', {
       class: 'remote-cursor',
-      transform: `translate(${cursor.x} ${y})`,
+      transform: `translate(${x} ${y})`,
     });
     group.appendChild(
       el('path', {
