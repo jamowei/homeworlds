@@ -35,11 +35,19 @@ export const ROLES = ['host', 'guest'];
 
 export const SIZE_NAMES = { 1: 'small', 2: 'medium', 3: 'large' };
 
-// One logical world, larger than a typical viewport, with a visible boundary.
-export const WORLD = Object.freeze({ width: 3600, height: 1500 });
+// The play field is what players see as the table: 3200 x 2200 world units,
+// still landscape but taller than the earlier 1500-high field. The world is
+// wider than the play field because it also carries the Bank strip on the
+// right (450 wide, plus its edge padding and the gap before the play field).
+export const WORLD = Object.freeze({ width: 3730, height: 2200 });
 
-// The world used to be narrower. Boards saved back then keep their Bank pieces
-// at the old coordinates (the Bank is anchored to the right edge), so
+// The world before the play field grew taller: 3600 x 1500. Boards saved back
+// then anchor the Bank to that right edge and centre it vertically, so
+// `migrateBoard` re-homes their Bank pieces for the current world.
+export const PREVIOUS_WORLD = Object.freeze({ width: 3600, height: 1500 });
+
+// The world used to be narrower still. Boards saved back then keep their Bank
+// pieces at the old coordinates (the Bank is anchored to the right edge), so
 // `migrateBoard` re-homes them for the current world.
 export const LEGACY_WORLD_WIDTH = 2400;
 
@@ -80,7 +88,7 @@ export const LEGACY_BANK = Object.freeze({
 
 export const MIN_ZOOM = 0.25;
 export const MAX_ZOOM = 1;
-export const INITIAL_ZOOM = 0.4;
+export const INITIAL_ZOOM = 0.35;
 
 const HALF_EXTENT = 30; // clamping margin for a piece centre
 
@@ -110,16 +118,16 @@ export function clampZoom(zoom) {
 }
 
 // Geometry of the Bank grid. Pure and deterministic; the renderer and the
-// tests both derive the same layout from it. `worldWidth` defaults to the
-// current world and `bank` to the current Bank spec, but both can be
-// overridden — e.g. to read an older board's layout during migration.
-export function bankLayout(worldWidth = WORLD.width, bank = BANK) {
+// tests both derive the same layout from it. `worldWidth` and `worldHeight`
+// default to the current world and `bank` to the current Bank spec, but all
+// can be overridden — e.g. to read an older board's layout during migration.
+export function bankLayout(worldWidth = WORLD.width, bank = BANK, worldHeight = WORLD.height) {
   const rows = COLORS.length;
   const cols = SIZES.length;
   const width = cols * bank.cellWidth;
   const height = rows * bank.cellHeight;
   const x = worldWidth - bank.padding - width;
-  const y = (WORLD.height - height) / 2;
+  const y = (worldHeight - height) / 2;
   return {
     rows,
     cols,
@@ -142,8 +150,8 @@ export function bankLayout(worldWidth = WORLD.width, bank = BANK) {
 // The rectangle the Bank occupies at the right edge of the world. The Bank has
 // its own fixed panel in the UI (see render/svg.js); this is the world region
 // that panel looks at, and the region Bank pieces sit in.
-export function bankStrip(worldWidth = WORLD.width, bank = BANK) {
-  const layout = bankLayout(worldWidth, bank);
+export function bankStrip(worldWidth = WORLD.width, bank = BANK, worldHeight = WORLD.height) {
+  const layout = bankLayout(worldWidth, bank, worldHeight);
   return { x: layout.x, y: layout.y, width: layout.width, height: layout.height };
 }
 
@@ -176,8 +184,8 @@ export function isKnownId(id) {
 // from the Bank layout, so "send home" never needs to store the origin: the
 // slot is a pure function of the piece id. Cached per world width so the
 // migration below can also ask for an older world's slots.
-function homesFor(worldWidth, bank) {
-  const layout = bankLayout(worldWidth, bank);
+function homesFor(worldWidth, bank, worldHeight = WORLD.height) {
+  const layout = bankLayout(worldWidth, bank, worldHeight);
   const homes = {};
   for (const color of COLORS) {
     for (const size of SIZES) {
@@ -209,18 +217,22 @@ export function homePosition(id, worldWidth = WORLD.width) {
 
 // Re-home Bank pieces saved against an older layout. A piece sitting exactly on
 // a legacy Bank slot moves to its current slot; every other piece (i.e. anything
-// out on the play field) is left alone. Two legacy layouts are known: the
-// original Bank in the narrow world, and that same Bank in the current world.
-// Idempotent: after one pass no piece is on a legacy slot any more.
+// out on the play field) is left alone. The known legacy layouts are the
+// original Bank in the narrow world, that Bank in the previous wider world, and
+// the current compact Bank before the world grew taller. Idempotent: after one
+// pass no piece is on a legacy slot any more.
 const LEGACY_BANK_LAYOUTS = [
-  { worldWidth: LEGACY_WORLD_WIDTH, bank: LEGACY_BANK },
-  { worldWidth: WORLD.width, bank: LEGACY_BANK },
+  { worldWidth: LEGACY_WORLD_WIDTH, bank: LEGACY_BANK, worldHeight: PREVIOUS_WORLD.height },
+  { worldWidth: PREVIOUS_WORLD.width, bank: LEGACY_BANK, worldHeight: PREVIOUS_WORLD.height },
+  { worldWidth: PREVIOUS_WORLD.width, bank: BANK, worldHeight: PREVIOUS_WORLD.height },
 ];
 
 export function migrateBoard(doc) {
   if (!doc || !doc.pieces) return doc;
   const newHomes = homePositions(WORLD.width);
-  const legacyHomes = LEGACY_BANK_LAYOUTS.map(({ worldWidth, bank }) => homesFor(worldWidth, bank));
+  const legacyHomes = LEGACY_BANK_LAYOUTS.map(({ worldWidth, bank, worldHeight }) =>
+    homesFor(worldWidth, bank, worldHeight),
+  );
   let changed = false;
   const pieces = { ...doc.pieces };
   for (const [id, piece] of Object.entries(pieces)) {

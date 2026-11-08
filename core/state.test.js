@@ -5,6 +5,7 @@ import {
   COLORS,
   SIZES,
   WORLD,
+  PREVIOUS_WORLD,
   BANK,
   LEGACY_BANK,
   LEGACY_WORLD_WIDTH,
@@ -109,8 +110,8 @@ test('the document carries a game id and a camera', () => {
   assert.equal(doc.camera.zoom, INITIAL_ZOOM);
 });
 
-test('the initial zoom is 40%', () => {
-  assert.equal(INITIAL_ZOOM, 0.4);
+test('the initial zoom is 35%', () => {
+  assert.equal(INITIAL_ZOOM, 0.35);
 });
 
 test('zoom is clamped to roughly 25%–100%', () => {
@@ -148,6 +149,12 @@ test('the Bank strip sits right of the play field', () => {
   assert.ok(strip.x + strip.width < WORLD.width, 'bank stays inside the world');
   assert.ok(playfieldWidth() < strip.x, 'the play field ends before the Bank');
   assert.ok(playfieldWidth() > WORLD.width * 0.7, 'the play field is still roomy');
+});
+
+test('the play field stays landscape at 3200 x 2200', () => {
+  assert.equal(playfieldWidth(), 3200);
+  assert.equal(WORLD.height, 2200);
+  assert.ok(playfieldWidth() > WORLD.height, 'wider than tall, not portrait');
 });
 
 test('bankLayout accepts a legacy Bank spec for migration', () => {
@@ -504,8 +511,8 @@ test('mergeDocuments ignores a corrupt remote-only piece', () => {
 // A board saved against an older Bank layout: the original 300x150 cells with
 // the copies laid out side by side. `migrateBoard` moves those pieces to the
 // current slots and leaves anything out on the play field alone.
-function legacyBoard(worldWidth = LEGACY_WORLD_WIDTH) {
-  const legacyLayout = bankLayout(worldWidth, LEGACY_BANK);
+function legacyBoard(worldWidth = LEGACY_WORLD_WIDTH, worldHeight = PREVIOUS_WORLD.height) {
+  const legacyLayout = bankLayout(worldWidth, LEGACY_BANK, worldHeight);
   const pieces = {};
   for (const color of COLORS) {
     for (const size of SIZES) {
@@ -536,13 +543,36 @@ test('migrateBoard re-homes Bank pieces from the old narrow world', () => {
   }
 });
 
-test('migrateBoard re-homes Bank pieces from the old Bank in the current world', () => {
-  const legacy = legacyBoard(WORLD.width);
+test('migrateBoard re-homes Bank pieces from the previous wider world', () => {
+  const legacy = legacyBoard(PREVIOUS_WORLD.width, PREVIOUS_WORLD.height);
   const id = pieceId('yellow', 2, 3);
   assert.notEqual(legacy.pieces[id].x, homePosition(id).x, 'the legacy slot really differs');
   const moved = migrateBoard(legacy);
   assert.equal(moved.pieces[id].x, homePosition(id).x);
   assert.equal(moved.pieces[id].y, homePosition(id).y);
+});
+
+test('migrateBoard re-homes Bank pieces saved before the world grew taller', () => {
+  const oldLayout = bankLayout(PREVIOUS_WORLD.width, BANK, PREVIOUS_WORLD.height);
+  const doc = createDocument('g1');
+  for (const color of COLORS) {
+    for (const size of SIZES) {
+      const cell = oldLayout.cellFor(color, size);
+      for (let copy = 1; copy <= BANK.copies; copy++) {
+        const [dx, dy] = BANK.copyOffsets[copy - 1];
+        const id = pieceId(color, size, copy);
+        doc.pieces[id] = { ...doc.pieces[id], x: cell.centerX + dx, y: cell.centerY + dy };
+      }
+    }
+  }
+  const id = pieceId('green', 3, 2);
+  assert.notEqual(doc.pieces[id].x, homePosition(id).x, 'the old Bank edge really differs');
+  assert.notEqual(doc.pieces[id].y, homePosition(id).y, 'the old Bank centre really differs');
+  const moved = migrateBoard(doc);
+  for (const pieceId_ of Object.keys(doc.pieces)) {
+    assert.equal(moved.pieces[pieceId_].x, homePosition(pieceId_).x, `${pieceId_} x re-homed`);
+    assert.equal(moved.pieces[pieceId_].y, homePosition(pieceId_).y, `${pieceId_} y re-homed`);
+  }
 });
 
 test('migrateBoard leaves play-field pieces untouched', () => {

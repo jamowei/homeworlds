@@ -71,8 +71,8 @@ test('the view is pulled back inside the world on every edge', () => {
 });
 
 test('a viewport wider than the world is centred on that axis instead', () => {
-  // At 25% the 1000px viewport spans 4000 world units > 3600, so x centres;
-  // the 600px height spans 2400 > 1500, so y centres too.
+  // At 25% the 1000px viewport spans 4000 world units > 3730, so x centres;
+  // the 600px height spans 2400 > 2200, so y centres too.
   const clamped = clampCamera({ x: 0, y: 0, zoom: MIN_ZOOM }, view, WORLD);
   assert.equal(clamped.x, WORLD.width / 2);
   assert.equal(clamped.y, WORLD.height / 2);

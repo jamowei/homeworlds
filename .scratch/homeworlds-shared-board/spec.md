@@ -135,8 +135,8 @@ Everything is German UI, matching the tone, colours and dark/light theme of the 
 - **Roles.** Each player is `host` (created the game, or playing alone) or `guest` (joined via an invite). The role is not part of the synced document: it is remembered locally (per tab, falling back to `localStorage`) and only the derived direction leaves the client. Both peers must hold opposite roles; create sets `host`, join sets `guest`.
 
 ### Layout (deterministic)
-- One logical world of **3600 × 1500** world units — wider than a typical viewport to leave room for large formations. Its **boundary is drawn as a fixed rectangle in world coordinates**, so players can see exactly where the table ends; it pans and zooms with the camera, and the camera is clamped so it can never be lost off-screen.
-- Bank occupies its own fixed panel to the right of the board (2/3 board, 1/3 Bank). The board camera looks only at the play field, so the Bank never covers the game board; the Bank panel is pinned to the Bank strip and does not pan or zoom.
+- One logical world of **3730 × 2200** world units, of which the play field is **3200 × 2200** — still landscape, with more height for large formations; the remaining strip on the right holds the Bank. Its **boundary is drawn as a fixed rectangle in world coordinates**, so players can see exactly where the table ends; it pans and zooms with the camera, and the camera is clamped so it can never be lost off-screen.
+- Bank occupies its own fixed panel to the right of the board (4/5 board, 1/5 Bank). The board camera looks only at the play field, so the Bank never covers the game board; the Bank panel is pinned to the Bank strip and does not pan or zoom.
 - Bank grid: **4 colour rows × 3 size columns**, 3 identical copies overlapping within each cell. Static slots — a vacated slot is not reflowed. The cell is sized for the largest piece.
 - Piece size is drawn, not just counted: small/medium/large pieces increase in side length (see `PIECE_SIZES` in `render/svg.js`), so relative size reads at a glance.
 - All 36 pieces start as `kind: 'ship'`, ordered in the Bank.
