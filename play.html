@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="play.css">
 </head>
 <body class="play-body">
-<button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Darstellung wechseln (hell/dunkel)"><span class="icon">🌓</span><span class="label">Helles Design</span></button>
 
 <div class="gate" id="gate" hidden>
   <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="gate-title">
@@ -70,10 +69,6 @@
 </div>
 
 <div class="play-wrap">
-  <header class="play-header">
-    <h1>Homeworlds</h1>
-  </header>
-
   <!-- ticket 13: file:// / HTTPS warning -->
   <p class="warning" id="file-warning" hidden>
     Peer-Sync (WebRTC) funktioniert nur über HTTPS. Diese Seite wurde über
@@ -88,6 +83,7 @@
     <span class="spacer"></span>
     <button type="button" class="btn" id="reconnect">Verbindung erneuern</button>
     <button type="button" class="btn danger" id="reset">Zurücksetzen</button>
+    <button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Darstellung wechseln (hell/dunkel)"><span class="icon">🌓</span><span class="label">Helles Design</span></button>
     <button type="button" class="btn danger-solid" id="leave-game">Spiel verlassen</button>
   </div>
 
