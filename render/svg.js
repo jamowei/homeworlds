@@ -33,6 +33,13 @@ export const SVG_NS = 'http://www.w3.org/2000/svg';
 // reads at a glance. The Bank cell in core/state.js is sized for the largest.
 export const PIECE_SIZES = Object.freeze({ 1: 56, 2: 68, 3: 80 });
 
+// Invisible grab halo around each piece, as a fraction of its size. It makes a
+// near miss grab the piece instead of panning the board. 0.7 keeps the largest
+// piece's halo (radius 56) clear of the next Bank cell: cell centres are 150 x
+// 140 apart and the copy fan reaches 18 x 12, so the closest two halo centres
+// are ~116 apart and the radii sum to 112.
+export const PIECE_HIT_RADIUS = 0.7;
+
 export function pieceSize(size) {
   return PIECE_SIZES[size] || PIECE_SIZES[3];
 }
@@ -448,6 +455,12 @@ export function createRenderer(boardSvg, options = {}) {
       'data-id': piece.id,
       transform: `translate(${x} ${y}) rotate(${rotation})`,
     });
+
+    // Invisible grab halo, drawn first so the visible shape stays on top. The
+    // halo widens the pointer target without changing what is painted.
+    group.appendChild(
+      el('circle', { cx: 0, cy: 0, r: size * PIECE_HIT_RADIUS, class: 'piece-hit' }),
+    );
 
     if (piece.kind === 'star') {
       const s = size * 0.86;

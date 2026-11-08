@@ -4,8 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { clampCamera, mirrorX, mirrorY } from './svg.js';
-import { WORLD, MIN_ZOOM, MAX_ZOOM, playfieldWidth } from '../core/state.js';
+import { clampCamera, mirrorX, mirrorY, PIECE_SIZES, PIECE_HIT_RADIUS } from './svg.js';
+import { WORLD, MIN_ZOOM, MAX_ZOOM, BANK, playfieldWidth } from '../core/state.js';
 
 const view = { w: 1000, h: 600 };
 
@@ -88,4 +88,19 @@ test('non-finite coordinates fall back to the world centre', () => {
   const clamped = clampCamera({ x: Number.NaN, y: Number.NaN, zoom: 1 }, view, WORLD);
   assert.equal(clamped.x, WORLD.width / 2);
   assert.equal(clamped.y, WORLD.height / 2);
+});
+
+// The invisible grab halo around a piece must stay clear of the neighbouring
+// Bank cell, or a click between cells could grab the wrong colour/size. The
+// closest pair is the (+18,-12) copy and the (-18,+12) copy one cell to the
+// right, so the halo diameter has to stay below that centre distance.
+test('the piece grab halo stays inside its Bank cell', () => {
+  const radius = PIECE_HIT_RADIUS * PIECE_SIZES[3];
+  const [ax, ay] = BANK.copyOffsets[2];
+  const [bx, by] = BANK.copyOffsets[0];
+  const closest = Math.hypot(BANK.cellWidth + bx - ax, by - ay);
+  assert.ok(
+    2 * radius < closest,
+    `two halos span ${2 * radius} units, closest Bank centres are ${closest} apart`,
+  );
 });

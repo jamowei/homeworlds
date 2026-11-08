@@ -404,6 +404,14 @@
   user-select: none;
 }
 
+/* Invisible grab halo around every piece (see render/svg.js). `pointer-events:
+   all` makes the unpainted circle hit-testable, so a near miss starts a piece
+   drag instead of panning the board. */
+.piece-hit {
+  fill: none;
+  pointer-events: all;
+}
+
 .piece.dragging {
   cursor: grabbing;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
