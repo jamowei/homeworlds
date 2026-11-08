@@ -18,7 +18,7 @@
 	},
   },
   "initializeCommand": "mkdir -p \"${localEnv:HOME}/.config/opencode\" && touch \"${localEnv:HOME}/.gitconfig\"",
-  "postCreateCommand": "npx playwright install chromium --with-deps",
+  "postStartCommand": "test -x /opt/google/chrome/chrome || npx --yes playwright install chrome --with-deps",
   "mounts": [
     {
       "source": "${localEnv:HOME}/.config/opencode",
