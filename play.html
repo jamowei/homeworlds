@@ -12,9 +12,9 @@
 <button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Darstellung wechseln (hell/dunkel)"><span class="icon">🌓</span><span class="label">Helles Design</span></button>
 
 <div class="gate" id="gate" hidden>
-  <div class="gate-card">
-    <h2>Gemeinsam spielen</h2>
-    <p class="gate-help">Dein Name ist Pflicht, damit Spiele nie anonym sind.</p>
+  <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+    <h2 id="gate-title">Gemeinsam spielen</h2>
+    <p class="gate-help" id="gate-help">Dein Name ist Pflicht, damit Spiele nie anonym sind.</p>
     <!-- ticket 13: WebRTC-unsupported notice -->
     <p class="gate-notice" id="gate-webrtc" hidden>
       Dieser Browser kann kein WebRTC. „Neues Spiel erstellen“ und „Beitreten“ sind
@@ -24,10 +24,13 @@
     <label class="field">Dein Name
       <input id="player-name" type="text" value="Gast" maxlength="24" autocomplete="nickname">
     </label>
-    <button type="button" class="btn primary" id="create-game">Neues Spiel erstellen</button>
-    <div class="gate-sep">oder Einladung einfügen</div>
-    <textarea id="join-input" rows="3" placeholder="Einladungs-Link oder Code"></textarea>
-    <button type="button" class="btn" id="join-game">Beitreten</button>
+    <div id="gate-actions">
+      <button type="button" class="btn primary" id="create-game">Neues Spiel erstellen</button>
+      <div class="gate-sep">oder Einladung einfügen</div>
+      <textarea id="join-input" rows="3" placeholder="Einladungs-Link oder Code"></textarea>
+      <button type="button" class="btn" id="join-game">Beitreten</button>
+    </div>
+    <button type="button" class="btn primary" id="gate-accept-invite" hidden>Einladung annehmen</button>
     <p class="gate-error" id="gate-error" hidden></p>
     <button type="button" class="linklike" id="gate-skip">Ohne Gegner weiterarbeiten</button>
   </div>

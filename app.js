@@ -502,6 +502,37 @@ async function decodeAnyBlob(text) {
   return (await decodeFragment(trimmed)) || (await decodePaste(trimmed)) || null;
 }
 
+// Opening an invite link must not join silently: the guest needs a chance to
+// enter a name first, exactly like the create-game gate does.
+let pendingInvite = null;
+
+function showInviteGate(blob) {
+  pendingInvite = blob;
+  $('gate-title').textContent = 'Einladung annehmen';
+  $('gate-help').textContent = 'Bitte gib deinen Namen ein, damit dein Gegner weiß, wer mitspielt.';
+  const actions = $('gate-actions');
+  if (actions) actions.hidden = true;
+  const accept = $('gate-accept-invite');
+  if (accept) accept.hidden = false;
+  const skip = $('gate-skip');
+  if (skip) skip.hidden = true;
+  showError('gate-error', '');
+  showGate(true);
+  nameInput?.focus();
+}
+
+function showDefaultGate() {
+  pendingInvite = null;
+  $('gate-title').textContent = 'Gemeinsam spielen';
+  $('gate-help').textContent = 'Dein Name ist Pflicht, damit Spiele nie anonym sind.';
+  const actions = $('gate-actions');
+  if (actions) actions.hidden = false;
+  const accept = $('gate-accept-invite');
+  if (accept) accept.hidden = true;
+  const skip = $('gate-skip');
+  if (skip) skip.hidden = false;
+}
+
 function showGate(show) {
   const gate = $('gate');
   if (gate) gate.hidden = !show;
@@ -728,6 +759,7 @@ function leaveGame() {
   hideHandshake();
   const joinInput = $('join-input');
   if (joinInput) joinInput.value = '';
+  showDefaultGate();
   showError('gate-error', '');
   showGate(true);
 }
@@ -797,11 +829,11 @@ async function createGame() {
 }
 
 async function joinAsGuest(offerBlob) {
-  if (missingName()) return;
+  if (missingName()) return false;
   const block = webRtcBlockReason();
   if (block) {
     showError('gate-error', block);
-    return;
+    return false;
   }
   setBusy(true, 'Einladung wird verarbeitet …');
   try {
@@ -817,9 +849,11 @@ async function joinAsGuest(offerBlob) {
       link: await linkFor(answer),
       reply: false,
     });
+    return true;
   } catch (error) {
     showGate(true);
     showError('gate-error', error?.message || 'Einladung konnte nicht verarbeitet werden.');
+    return false;
   } finally {
     setBusy(false);
   }
@@ -998,6 +1032,10 @@ $('create-game')?.addEventListener('click', () => createGame());
 $('reconnect')?.addEventListener('click', () => reconnect());
 $('leave-game')?.addEventListener('click', () => leaveGame());
 $('join-game')?.addEventListener('click', () => joinFromText($('join-input')?.value));
+$('gate-accept-invite')?.addEventListener('click', async () => {
+  if (!pendingInvite) return;
+  if (await joinAsGuest(pendingInvite)) pendingInvite = null;
+});
 $('accept-reply')?.addEventListener('click', () => acceptReplyText($('reply-input')?.value));
 $('copy-diagnostics')?.addEventListener('click', async () => {
   const text = JSON.stringify(globalThis.__hwDiagnostics?.() || {}, null, 2);
@@ -1068,7 +1106,9 @@ if (webRtcBlockReason()) {
   if (notice) notice.hidden = false;
 }
 
-// Opening an invite link shows the board immediately and produces a reply.
+// Opening a host invite link asks the guest for a name before joining, then
+// produces the reply. A reply link is handled immediately (the host already
+// named themselves when creating the game).
 const hasInvite = /#hw2?=/.test(location.hash || '');
 if (hasInvite) {
   showGate(false);
@@ -1086,7 +1126,9 @@ if (hasInvite) {
     if (blob.role === 'guest') {
       await acceptReplyText(location.hash);
     } else {
-      await joinAsGuest(blob);
+      // Ask for the guest's name before the connection is set up. Joining
+      // directly would silently use the default "Gast" without showing the gate.
+      showInviteGate(blob);
     }
   })();
 } else {
